@@ -226,7 +226,7 @@ export function GetFilesFromDataTransfer(dataTransfer, onReady) {
 }
 
 export function AddNumberInput(parentElement, className, onChange, id) {
-  // Include ID Parameter for DIV Tag
+  // Include ID Parameter for DOM Element
   let numberInput = AddDomElement(parentElement, 'input', className, '', id);
   numberInput.setAttribute('type', 'text');
   let onChangeTimeout = null;
