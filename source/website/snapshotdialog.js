@@ -44,10 +44,10 @@ export function ShowSnapshotDialog(viewer) {
     }
   }
 
-  function AddWidthHeightNumberInput(parentDiv, text, onChange) {
+  function AddWidthHeightNumberInput(parentDiv, text, onChange, id) {
     let line = AddDiv(parentDiv, 'ov_dialog_row');
-    AddDiv(line, 'ov_snapshot_dialog_param_name', text);
-    let numberInput = AddNumberInput(line, 'ov_dialog_text', onChange);
+    AddDiv(line, 'ov_snapshot_dialog_param_name', text, `${id}_text`);
+    let numberInput = AddNumberInput(line, 'ov_dialog_text', onChange, `${id}_input`);
     numberInput.classList.add('ov_snapshot_dialog_param_value');
     numberInput.addEventListener('focus', () => {
       numberInput.setSelectionRange(0, numberInput.value.length);
@@ -128,11 +128,11 @@ export function ShowSnapshotDialog(viewer) {
   customSize.widthInput = AddWidthHeightNumberInput(optionsDiv, 'Width', (val) => {
     UpdatePreview(viewer, previewImage, GetSize(sizes, selectedIndex));
     CookieSetIntVal('ov_snapshot_custom_width', val);
-  });
+  }, 'ov_snapshot_custom_width');
   customSize.heightInput = AddWidthHeightNumberInput(optionsDiv, 'Height', (val) => {
     UpdatePreview(viewer, previewImage, GetSize(sizes, selectedIndex));
     CookieSetIntVal('ov_snapshot_custom_height', val);
-  });
+  }, 'ov_snapshot_custom_height');
   customSize.widthInput.value = CookieGetIntVal('ov_snapshot_custom_width', 1000);
   customSize.heightInput.value = CookieGetIntVal('ov_snapshot_custom_height', 1000);
   UpdateCustomStatus(sizes, customIndex, selectedIndex);

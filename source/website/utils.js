@@ -110,7 +110,7 @@ export function CreateDownloadLink(url, fileName) {
   link.href = url;
   link.download = fileName;
   document.body.appendChild(link);
-  link.click();
+  // link.click();
 }
 
 export function CreateSvgIconElement(iconName, className) {
@@ -225,8 +225,9 @@ export function GetFilesFromDataTransfer(dataTransfer, onReady) {
   }
 }
 
-export function AddNumberInput(parentElement, className, onChange) {
-  let numberInput = AddDomElement(parentElement, 'input', className);
+export function AddNumberInput(parentElement, className, onChange, id) {
+  // Include ID Parameter for DIV Tag
+  let numberInput = AddDomElement(parentElement, 'input', className, '', id);
   numberInput.setAttribute('type', 'text');
   let onChangeTimeout = null;
   numberInput.addEventListener('input', () => {

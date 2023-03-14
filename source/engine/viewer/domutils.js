@@ -42,6 +42,7 @@ export function GetDomElementClientCoordinates(element, clientX, clientY) {
 }
 
 export function CreateDomElement(elementType, className, innerHTML, id) {
+  // Include ID Parameter for DOM Element
   let element = document.createElement(elementType);
   if (className) {
     element.className = className;
@@ -55,14 +56,15 @@ export function CreateDomElement(elementType, className, innerHTML, id) {
   return element;
 }
 
-export function AddDomElement(parentElement, elementType, className, innerHTML) {
-  let element = CreateDomElement(elementType, className, innerHTML);
+export function AddDomElement(parentElement, elementType, className, innerHTML, id) {
+  // Include ID Parameter for DOM Element
+  let element = CreateDomElement(elementType, className, innerHTML, id);
   parentElement.appendChild(element);
   return element;
 }
 
-export function AddDiv(parentElement, className, innerHTML) {
-  return AddDomElement(parentElement, 'div', className, innerHTML);
+export function AddDiv(parentElement, className, innerHTML, id) {
+  return AddDomElement(parentElement, 'div', className, innerHTML, id);
 }
 
 export function ClearDomElement(element) {
