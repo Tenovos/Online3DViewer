@@ -1,10 +1,7 @@
 #!/bin/bash
 
-# Provide comma separated list of accounts to deploy to (or one account).
-# ex: ./deploy_package.sh ninja,ninja2
-
-# Read accounts into array
-IFS=',' read -r -a accountsArray <<< "$1"
+# Set AWS_PROFILE to desired account.
+# ex: AWS_PROFILE=ninja ./deploy_package.sh
 
 # Stage Package for Deployment
 rm -rf deploy/*
@@ -24,18 +21,38 @@ cp website/index_min.html deploy/website/
 mkdir deploy/website/assets/models
 # cp website/assets/models/car.glb deploy/website/assets/models/
 
-# Upload package to S3 for each account
-for ACCOUNT in "${accountsArray[@]}"
-do
-    echo "Uploading 3D Viewer to $ACCOUNT"
-    aws s3 sync ./deploy s3://tenovos-web-ui-baseline-$ACCOUNT/viewer/3d-object --profile $ACCOUNT
+# Check if S3 Bucket exists in account
+echo "Checking if tenovos-3d-object-viewer S3 Bucket exists"
+S3_BUCKET=$(aws s3api list-buckets --query "Buckets[?contains(Name, 'tenovos-3d-object-viewer')].Name" --output text)
+if [[ $S3_BUCKET ]]
+then
+    echo "S3 Bucket already exists. Continuing..."
+else
+    echo "S3 Bucket does not exist. Creating required bucket..."
+    #aws s3api create-bucket --bucket tenovos-3d-object-viewer-$AWS_PROFILE --region us-east-1
+fi
 
-    echo "Retrieving CloudFront Distribution ID for $ACCOUNT"
-    DISTRIBUTION_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[*].{id:Id,origin:Origins.Items[0].Id}[?contains(origin, 'S3-tenovos-web-ui-baseline')].id" --output text --profile $ACCOUNT)
-    echo "Distribution ID is: $DISTRIBUTION_ID"
+# Check if CloudFront Distribution exists for bucket
+echo "Checking for existing CloudFront Distribution"
+DISTRIBUTION_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[*].{id:Id,origin:Origins.Items[0].Id}[?contains(origin, 'tenovos-3d-object-viewer')].id" --output text)
+if [[ $DISTRIBUTION_ID ]]
+then
+    echo "Distribution [$DISTRIBUTION_ID] already exists for bucket."
+else
+    echo "Distribution does not exist for bucket. Creating new distribution..."
+    #aws cloudfront create-origin-access-control --origin-access-control-config Name=tenovos-3d-object-viewer-$AWS_PROFILE.s3.us-east-1.amazonaws.,SigningProtocol=sigv4,SigningBehavior=always,OriginAccessControlOriginType=s3
+    #aws cloudfront create-distribution --origin-domain-name tenovos-3d-object-viewer-$AWS_PROFILE.s3.amazonaws.com --default-root-object index_min.html
+    #aws s3api put-bucket-policy --bucket tenovos-3d-object-viewer-$AWS_PROFILE --policy file://s3-policy.json
 
-    echo "Creating invalidation for $DISTRIBUTION_ID"
-    aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/tenovos-web-ui-baseline-$ACCOUNT/viewer/3d-object/*" --profile $ACCOUNT
+    DISTRIBUTION_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[*].{id:Id,origin:Origins.Items[0].Id}[?contains(origin, 'tenovos-3d-object-viewer')].id" --output text)
+fi
 
-    echo "Done in $ACCOUNT"
-done
+# Upload package to S3 Bucket
+echo "Uploading 3D Viewer to tenovos-3d-object-viewer-$AWS_PROFILE"
+aws s3 sync ./deploy s3://tenovos-3d-object-viewer-$AWS_PROFILE
+
+# Create invalidation for CloudFront distribution
+echo "Creating invalidation for $DISTRIBUTION_ID"
+aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/tenovos-3d-object-viewer-$AWS_PROFILE/*"
+
+echo "Done in $AWS_PROFILE"
