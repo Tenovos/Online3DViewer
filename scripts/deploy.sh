@@ -60,19 +60,57 @@ echo "Checking for existing CloudFront Distribution"
 DISTRIBUTION_ID=$(aws cloudfront list-distributions --profile $PROFILE --query "DistributionList.Items[*].{id:Id,origin:Origins.Items[0].Id}[?contains(origin, '$BUCKET')].id" --output text)
 if [[ $DISTRIBUTION_ID ]]
 then
-  echo "Distribution [$DISTRIBUTION_ID] already exists for bucket."
+  echo "Distribution [$DISTRIBUTION_ID] already exists for Bucket [$BUCKET]."
 else
-  echo "Distribution does not exist for bucket. Creating new distribution..."
+  echo "Distribution does not exist for bucket [$BUCKET].  Creating new Distribution..."
   aws cloudfront create-distribution --profile $PROFILE --origin-domain-name $BUCKET.s3.amazonaws.com --no-paginate --output text
-  aws cloudfront create-origin-access-control --profile $PROFILE --origin-access-control-config Name=$BUCKET.s3.us-east-1.amazonaws.,SigningProtocol=sigv4,SigningBehavior=always,OriginAccessControlOriginType=s3
-
   DISTRIBUTION_ID=$(aws cloudfront list-distributions --profile $PROFILE --query "DistributionList.Items[*].{id:Id,origin:Origins.Items[0].Id}[?contains(origin, '$BUCKET')].id" --output text)
+
+  if [[ -z "$DISTRIBUTION_ID" ]]
+  then
+    echo "Distribution not created for Bucket [$BUCKET]"
+    exit 1
+  fi
+
+  echo "Configuring S3 Bucket Permissions"
   DISTRIBUTION_ARN=$(aws cloudfront get-distribution --profile $PROFILE --id $DISTRIBUTION_ID --query 'Distribution.ARN' --output text)
   S3_POLICY_JSON=./scripts/s3-policy.json
   echo "$( jq '.Statement[].Resource = "arn:aws:s3:::'$BUCKET'/*" | .Statement[].Condition.StringEquals."AWS:SourceArn" = "'$DISTRIBUTION_ARN'"' $S3_POLICY_JSON)" > $S3_POLICY_JSON
 
   aws s3api put-bucket-policy --profile $PROFILE --bucket $BUCKET --policy file://$S3_POLICY_JSON
 fi
+
+echo "Checking for existing Origin Access Control"
+ORIGIN_ACCESS_ID=$(aws cloudfront list-origin-access-controls --profile $PROFILE --query "OriginAccessControlList.Items[*].{id:Id, name:Name}[?contains(name, '$BUCKET')].id" --output text)
+
+if [[ $ORIGIN_ACCESS_ID ]]
+then
+  echo "Origin Access Control [$ORIGIN_ACCESS_ID] already exists for Bucket [$BUCKET]."
+else
+  echo "Origin Access Control does not exist for Bucket [$BUCKET].  Creating new Origin Access Control..."
+  aws cloudfront create-origin-access-control --profile $PROFILE --origin-access-control-config Name=$BUCKET.s3.us-east-1.amazonaws.,SigningProtocol=sigv4,SigningBehavior=always,OriginAccessControlOriginType=s3
+  ORIGIN_ACCESS_ID=$(aws cloudfront list-origin-access-controls --profile $PROFILE --query "OriginAccessControlList.Items[*].{id:Id, name:Name}[?contains(name, '$BUCKET')].id" --output text)
+
+  if [[ -z "$ORIGIN_ACCESS_ID" ]]
+  then
+    echo "Origin Access Control not created for Bucket [$BUCKET]"
+    exit 1
+  fi
+fi
+
+echo "Exporting Origin Access Control..."
+DISTRIBUTION=$(aws cloudfront get-distribution-config --profile $PROFILE --id $DISTRIBUTION_ID | \
+  ORIGIN_ACCESS_ID="$ORIGIN_ACCESS_ID" \
+    jq '.DistributionConfig.Origins.Items[0].OriginAccessControlId = env.ORIGIN_ACCESS_ID')
+DISTRIBUTION_CONFIG=$(echo $DISTRIBUTION | jq '.DistributionConfig')
+DISTRIBUTION_CONFIG_ETAG=$(echo $DISTRIBUTION | jq -r '.ETag')
+
+# echo "Distribution: $DISTRIBUTION"
+# echo "Config: $DISTRIBUTION_CONFIG"
+# echo "ETag: $DISTRIBUTION_CONFIG_ETAG"
+
+echo "Assigning Origin Access Control to Distribution..."
+aws cloudfront update-distribution --profile $PROFILE --id $DISTRIBUTION_ID --if-match $DISTRIBUTION_CONFIG_ETAG --distribution-config "$DISTRIBUTION_CONFIG" --no-paginate --output text
 
 # Upload package to S3 Bucket
 echo "Uploading 3D Viewer to $BUCKET"
