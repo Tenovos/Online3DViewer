@@ -1,116 +1,101 @@
 import { AddDiv, CreateDiv } from '../engine/viewer/domutils.js';
 import { AddSvgIconElement, InstallTooltip } from './utils.js';
 
-export class ToolbarButton
-{
-    constructor (image, imageTitle, onClick)
-    {
-        this.image = image;
-        this.imageTitle = imageTitle;
+export class ToolbarButton {
+  constructor(image, imageTitle, onClick) {
+    this.image = image;
+    this.imageTitle = imageTitle;
 
-        this.selected = false;
-        this.buttonDiv = CreateDiv ('ov_toolbar_button');
-        this.buttonImg = AddSvgIconElement (this.buttonDiv, this.image);
-        if (onClick !== null) {
-            this.buttonDiv.addEventListener ('click', onClick);
-        }
-
-        this.buttonDiv.setAttribute ('alt', this.imageTitle);
-        InstallTooltip (this.buttonDiv, this.imageTitle);
+    this.selected = false;
+    this.buttonDiv = CreateDiv('ov_toolbar_button', null, 'ov_toolbar_button_' + this.image);
+    this.buttonImg = AddSvgIconElement(this.buttonDiv, this.image);
+    if (onClick !== null) {
+      this.buttonDiv.addEventListener('click', onClick);
     }
 
-    AddDomElements (parentDiv)
-    {
-        parentDiv.appendChild (this.buttonDiv);
-    }
+    this.buttonDiv.setAttribute('alt', this.imageTitle);
+    InstallTooltip(this.buttonDiv, this.imageTitle);
+  }
 
-    AddClass (className)
-    {
-        this.buttonDiv.classList.add (className);
-    }
+  AddDomElements(parentDiv) {
+    parentDiv.appendChild(this.buttonDiv);
+  }
 
-    RemoveClass (className)
-    {
-        this.buttonDiv.classList.remove (className);
-    }
+  AddClass(className) {
+    this.buttonDiv.classList.add(className);
+  }
 
-    AddImageClass (className)
-    {
-        this.buttonImg.classList.add (className);
-    }
+  RemoveClass(className) {
+    this.buttonDiv.classList.remove(className);
+  }
 
-    RemoveImageClass (className)
-    {
-        this.buttonImg.classList.remove (className);
-    }
+  AddImageClass(className) {
+    this.buttonImg.classList.add(className);
+  }
 
-    IsSelected ()
-    {
-        return this.selected;
-    }
+  RemoveImageClass(className) {
+    this.buttonImg.classList.remove(className);
+  }
 
-    SetSelected (selected)
-    {
-        this.selected = selected;
-        if (this.selected) {
-            this.buttonDiv.classList.add ('selected');
-        } else {
-            this.buttonDiv.classList.remove ('selected');
-        }
+  IsSelected() {
+    return this.selected;
+  }
+
+  SetSelected(selected) {
+    this.selected = selected;
+    if (this.selected) {
+      this.buttonDiv.classList.add('selected');
+    } else {
+      this.buttonDiv.classList.remove('selected');
     }
+  }
 }
 
-export class Toolbar
-{
-    constructor (parentDiv)
-    {
-        this.mainDiv = AddDiv (parentDiv, 'ov_toolbar');
-    }
+export class Toolbar {
+  constructor(parentDiv) {
+    this.mainDiv = AddDiv(parentDiv, 'ov_toolbar');
+  }
 
-    AddImageButton (image, imageTitle, onClick)
-    {
-        let button = new ToolbarButton (image, imageTitle, onClick);
-        button.AddDomElements (this.mainDiv);
-        return button;
-    }
+  AddImageButton(image, imageTitle, onClick) {
+    let button = new ToolbarButton(image, imageTitle, onClick);
+    button.AddDomElements(this.mainDiv);
+    return button;
+  }
 
-    AddImagePushButton (image, imageTitle, isSelected, onClick)
-    {
-        let button = new ToolbarButton (image, imageTitle, () => {
-            button.SetSelected (!button.IsSelected ());
-            onClick (button.IsSelected ());
-        });
-        button.AddDomElements (this.mainDiv);
-        button.SetSelected (isSelected);
-        return button;
-    }
+  AddImagePushButton(image, imageTitle, isSelected, onClick) {
+    let button = new ToolbarButton(image, imageTitle, () => {
+      button.SetSelected(!button.IsSelected());
+      onClick(button.IsSelected());
+    });
+    button.AddDomElements(this.mainDiv);
+    button.SetSelected(isSelected);
+    return button;
+  }
 
-    AddImageRadioButton (buttonData, selectedIndex, onClick)
-    {
-        let buttons = [];
-        for (let buttonIndex = 0; buttonIndex < buttonData.length; buttonIndex++) {
-            let data = buttonData[buttonIndex];
-            let button = this.AddImageButton (data.image, data.title, () => {
-                for (let i = 0; i < buttons.length; i++) {
-                    let currentButton = buttons[i];
-                    if (i === buttonIndex) {
-                        currentButton.SetSelected (true);
-                    } else {
-                        currentButton.SetSelected (false);
-                    }
-                }
-                onClick (buttonIndex);
-            });
-            if (selectedIndex === buttonIndex) {
-                button.SetSelected (true);
-            }
-            buttons.push (button);
+  AddImageRadioButton(buttonData, selectedIndex, onClick) {
+    let buttons = [];
+    for (let buttonIndex = 0; buttonIndex < buttonData.length; buttonIndex++) {
+      let data = buttonData[buttonIndex];
+      let button = this.AddImageButton(data.image, data.title, () => {
+        for (let i = 0; i < buttons.length; i++) {
+          let currentButton = buttons[i];
+          if (i === buttonIndex) {
+            currentButton.SetSelected(true);
+          } else {
+            currentButton.SetSelected(false);
+          }
         }
-        return buttons;
+        onClick(buttonIndex);
+      });
+      if (selectedIndex === buttonIndex) {
+        button.SetSelected(true);
+      }
+      buttons.push(button);
     }
+    return buttons;
+  }
 
-    AddSeparator ()
-    {
-        return AddDiv (this.mainDiv, 'ov_toolbar_separator');
-    }
+  AddSeparator() {
+    return AddDiv(this.mainDiv, 'ov_toolbar_separator');
+  }
 }
