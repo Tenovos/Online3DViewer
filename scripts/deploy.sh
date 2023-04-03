@@ -83,7 +83,7 @@ fi
 echo "Checking for existing Origin Access Control"
 ORIGIN_ACCESS_ID=$(aws cloudfront list-origin-access-controls --profile $PROFILE --query "OriginAccessControlList.Items[*].{id:Id, name:Name}[?contains(name, '$BUCKET')].id" --output text)
 
-if [[ $ORIGIN_ACCESS_ID ]]
+if [[ ${#ORIGIN_ACCESS_ID} -gt 10 ]]
 then
   echo "Origin Access Control [$ORIGIN_ACCESS_ID] already exists for Bucket [$BUCKET]."
 else
@@ -91,7 +91,7 @@ else
   aws cloudfront create-origin-access-control --profile $PROFILE --origin-access-control-config Name=$BUCKET.s3.us-east-1.amazonaws.,SigningProtocol=sigv4,SigningBehavior=always,OriginAccessControlOriginType=s3
   ORIGIN_ACCESS_ID=$(aws cloudfront list-origin-access-controls --profile $PROFILE --query "OriginAccessControlList.Items[*].{id:Id, name:Name}[?contains(name, '$BUCKET')].id" --output text)
 
-  if [[ -z "$ORIGIN_ACCESS_ID" ]]
+  if [[ ${#ORIGIN_ACCESS_ID} -lt 11 ]]
   then
     echo "Origin Access Control not created for Bucket [$BUCKET]"
     exit 1
