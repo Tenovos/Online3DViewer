@@ -657,9 +657,12 @@ export class Website {
     // });
     // AddSeparator(this.toolbar, ['only_full_width', 'only_on_model']);
     // AddButton(this.toolbar, 'snapshot', 'Create snapshot', ['only_full_width', 'only_on_model'], () => {
-    AddButton(this.toolbar, 'snapshot', 'Create snapshot', ['only_full_width'], () => {
-      ShowSnapshotDialog(this.viewer);
-    });
+
+    if (this.parameters.options?.button?.snapshot) {
+      AddButton(this.toolbar, 'snapshot', 'Create snapshot', ['only_full_width'], () => {
+        ShowSnapshotDialog(this.viewer);
+      });
+    }
 
     EnumeratePlugins(PluginType.Toolbar, (plugin) => {
       plugin.registerButtons({

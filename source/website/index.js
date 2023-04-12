@@ -28,7 +28,7 @@ export function RegisterToolbarPlugin(plugin) {
   RegisterPlugin(PluginType.Toolbar, plugin);
 }
 
-export function StartWebsite(externalLibLocation) {
+export function StartWebsite(externalLibLocation, options) {
   SetExternalLibLocation(externalLibLocation);
   window.addEventListener('load', () => {
     let website = new Website({
@@ -46,6 +46,7 @@ export function StartWebsite(externalLibLocation) {
       sidebarSplitterDiv: document.getElementById('main_sidebar_splitter'),
       viewerDiv: document.getElementById('main_viewer'),
       // fileInput : document.getElementById ('open_file')
+      options,
     });
     website.Load();
   });
