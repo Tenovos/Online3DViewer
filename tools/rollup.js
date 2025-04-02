@@ -2,7 +2,7 @@ export default [
     {
         input: 'source/engine/main.js',
         output: {
-            file: 'build/o3dv.module.js',
+            file: 'build/engine/o3dv.module.js',
             format: 'es'
         },
         external: [
@@ -13,7 +13,8 @@ export default [
             'three/examples/jsm/loaders/FBXLoader.js',
             'three/examples/jsm/loaders/ColladaLoader.js',
             'three/examples/jsm/loaders/VRMLLoader.js',
-            'three/examples/jsm/loaders/3MFLoader.js'
+            'three/examples/jsm/loaders/3MFLoader.js',
+            'three/examples/jsm/loaders/AMFLoader.js'
         ]
     }
 ];

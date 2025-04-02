@@ -1,8 +1,8 @@
 import { Coord3D, CoordDistance3D, SubCoord3D } from '../geometry/coord3d.js';
 import { DegRad, Direction, IsEqual } from '../geometry/geometry.js';
 import { ColorComponentToFloat } from '../model/color.js';
-import { ShadingType } from '../threejs/threeutils.js';
-import { Camera, CameraMode } from './camera.js';
+import { CreateHighlightMaterials, ShadingType } from '../threejs/threeutils.js';
+import { Camera, NavigationMode, ProjectionMode } from './camera.js';
 import { GetDomElementInnerDimensions } from './domutils.js';
 import { Navigation } from './navigation.js';
 import { ShadingModel } from './shadingmodel.js';
@@ -21,7 +21,7 @@ export function GetDefaultCamera(direction) {
     );
   } else if (direction === Direction.Y) {
     return new Camera(
-      new Coord3D(3.0, 2.0, 3.0),
+      new Coord3D(-1.5, 2.0, 3.0),
       new Coord3D(0.0, 0.0, 0.0),
       new Coord3D(0.0, 1.0, 0.0),
       fieldOfView
@@ -97,7 +97,7 @@ export class CameraValidator {
 
 export class UpVector {
   constructor() {
-    this.direction = Direction.Z;
+    this.direction = Direction.Y;
     this.isFixed = true;
     this.isFlipped = false;
   }
@@ -144,13 +144,15 @@ export class UpVector {
 
 export class Viewer {
   constructor() {
+    THREE.ColorManagement.enabled = false;
+
     this.canvas = null;
     this.renderer = null;
     this.scene = null;
     this.mainModel = null;
     this.extraModel = null;
     this.camera = null;
-    this.cameraMode = null;
+    this.projectionMode = null;
     this.cameraValidator = null;
     this.shadingModel = null;
     this.navigation = null;
@@ -170,6 +172,8 @@ export class Viewer {
     };
 
     this.renderer = new THREE.WebGLRenderer(parameters);
+    this.renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
+
     if (window.devicePixelRatio) {
       this.renderer.setPixelRatio(window.devicePixelRatio);
     }
@@ -232,8 +236,8 @@ export class Viewer {
     return this.navigation.GetCamera();
   }
 
-  GetCameraMode() {
-    return this.cameraMode;
+  GetProjectionMode() {
+    return this.projectionMode;
   }
 
   SetCamera(camera) {
@@ -242,21 +246,21 @@ export class Viewer {
     this.Render();
   }
 
-  SetCameraMode(cameraMode) {
-    if (this.cameraMode === cameraMode) {
+  SetProjectionMode(projectionMode) {
+    if (this.projectionMode === projectionMode) {
       return;
     }
 
     this.scene.remove(this.camera);
-    if (cameraMode === CameraMode.Perspective) {
+    if (projectionMode === ProjectionMode.Perspective) {
       this.camera = new THREE.PerspectiveCamera(45.0, 1.0, 0.1, 1000.0);
-    } else if (cameraMode === CameraMode.Orthographic) {
+    } else if (projectionMode === ProjectionMode.Orthographic) {
       this.camera = new THREE.OrthographicCamera(-1.0, 1.0, 1.0, -1.0, 0.1, 1000.0);
     }
     this.scene.add(this.camera);
 
-    this.cameraMode = cameraMode;
-    this.shadingModel.SetCameraMode(cameraMode);
+    this.projectionMode = projectionMode;
+    this.shadingModel.SetProjectionMode(projectionMode);
     this.cameraValidator.ForceUpdate();
 
     this.AdjustClippingPlanes();
@@ -317,14 +321,14 @@ export class Viewer {
     this.Render();
   }
 
-  IsFixUpVector() {
-    return this.navigation.IsFixUpVector();
+  GetNavigationMode() {
+    return this.navigation.GetNavigationMode();
   }
 
-  SetFixUpVector(isFixUpVector) {
+  SetNavigationMode(navigationMode) {
     let oldCamera = this.navigation.GetCamera();
-    let newCamera = this.upVector.SetFixed(isFixUpVector, oldCamera);
-    this.navigation.SetFixUpVector(isFixUpVector);
+    let newCamera = this.upVector.SetFixed(navigationMode === NavigationMode.FixedUpVector, oldCamera);
+    this.navigation.SetNavigationMode(navigationMode);
     if (newCamera !== null) {
       this.navigation.MoveCamera(newCamera, this.settings.animationSteps);
     }
@@ -353,13 +357,13 @@ export class Viewer {
     this.camera.up.set(navigationCamera.up.x, navigationCamera.up.y, navigationCamera.up.z);
     this.camera.lookAt(new THREE.Vector3(navigationCamera.center.x, navigationCamera.center.y, navigationCamera.center.z));
 
-    if (this.cameraMode === CameraMode.Perspective) {
+    if (this.projectionMode === ProjectionMode.Perspective) {
       if (!this.cameraValidator.ValidatePerspective()) {
         this.camera.aspect = this.canvas.width / this.canvas.height;
         this.camera.fov = navigationCamera.fov;
         this.camera.updateProjectionMatrix();
       }
-    } else if (this.cameraMode === CameraMode.Orthographic) {
+    } else if (this.projectionMode === ProjectionMode.Orthographic) {
       let eyeCenterDistance = CoordDistance3D(navigationCamera.eye, navigationCamera.center);
       if (!this.cameraValidator.ValidateOrthographic(eyeCenterDistance)) {
         let aspect = this.canvas.width / this.canvas.height;
@@ -402,7 +406,7 @@ export class Viewer {
   }
 
   SetMeshesVisibility(isVisible) {
-    this.mainModel.EnumerateMeshes((mesh) => {
+    this.mainModel.EnumerateMeshesAndLines((mesh) => {
       let visible = isVisible(mesh.userData);
       if (mesh.visible !== visible) {
         mesh.visible = visible;
@@ -418,21 +422,13 @@ export class Viewer {
   }
 
   SetMeshesHighlight(highlightColor, isHighlighted) {
-    function CreateHighlightMaterials(originalMaterials, highlightMaterial) {
-      let highlightMaterials = [];
-      for (let i = 0; i < originalMaterials.length; i++) {
-        highlightMaterials.push(highlightMaterial);
-      }
-      return highlightMaterials;
-    }
-
-    const highlightMaterial = this.CreateHighlightMaterial(highlightColor);
-    this.mainModel.EnumerateMeshes((mesh) => {
+    let withPolygonOffset = this.mainModel.HasLinesOrEdges();
+    this.mainModel.EnumerateMeshesAndLines((mesh) => {
       let highlighted = isHighlighted(mesh.userData);
       if (highlighted) {
         if (mesh.userData.threeMaterials === null) {
           mesh.userData.threeMaterials = mesh.material;
-          mesh.material = CreateHighlightMaterials(mesh.material, highlightMaterial);
+          mesh.material = CreateHighlightMaterials(mesh.userData.threeMaterials, highlightColor, withPolygonOffset);
         }
       } else {
         if (mesh.userData.threeMaterials !== null) {
@@ -445,22 +441,17 @@ export class Viewer {
     this.Render();
   }
 
-  CreateHighlightMaterial(highlightColor) {
-    const showEdges = this.mainModel.edgeSettings.showEdges;
-    return this.shadingModel.CreateHighlightMaterial(highlightColor, showEdges);
-  }
-
-  GetMeshUserDataUnderMouse(mouseCoords) {
-    let intersection = this.GetMeshIntersectionUnderMouse(mouseCoords);
+  GetMeshUserDataUnderMouse(intersectionMode, mouseCoords) {
+    let intersection = this.GetMeshIntersectionUnderMouse(intersectionMode, mouseCoords);
     if (intersection === null) {
       return null;
     }
     return intersection.object.userData;
   }
 
-  GetMeshIntersectionUnderMouse(mouseCoords) {
+  GetMeshIntersectionUnderMouse(intersectionMode, mouseCoords) {
     let canvasSize = this.GetCanvasSize();
-    let intersection = this.mainModel.GetMeshIntersectionUnderMouse(mouseCoords, this.camera, canvasSize.width, canvasSize.height);
+    let intersection = this.mainModel.GetMeshIntersectionUnderMouse(intersectionMode, mouseCoords, this.camera, canvasSize.width, canvasSize.height);
     if (intersection === null) {
       return null;
     }
@@ -475,16 +466,16 @@ export class Viewer {
     return this.mainModel.GetBoundingSphere(needToProcess);
   }
 
-  EnumerateMeshesUserData(enumerator) {
-    this.mainModel.EnumerateMeshes((mesh) => {
+  EnumerateMeshesAndLinesUserData(enumerator) {
+    this.mainModel.EnumerateMeshesAndLines((mesh) => {
       enumerator(mesh.userData);
     });
   }
 
   InitNavigation() {
-    let camera = GetDefaultCamera(Direction.Z);
+    let camera = GetDefaultCamera(Direction.Y);
     this.camera = new THREE.PerspectiveCamera(45.0, 1.0, 0.1, 1000.0);
-    this.cameraMode = CameraMode.Perspective;
+    this.projectionMode = ProjectionMode.Perspective;
     this.cameraValidator = new CameraValidator();
     this.scene.add(this.camera);
 
@@ -528,7 +519,7 @@ export class Viewer {
     };
   }
 
-  GetImageAsDataUrl(width, height) {
+  GetImageAsDataUrl(width, height, isTransparent) {
     let originalSize = this.GetImageSize();
     let renderWidth = width;
     let renderHeight = height;
@@ -536,10 +527,15 @@ export class Viewer {
       renderWidth /= window.devicePixelRatio;
       renderHeight /= window.devicePixelRatio;
     }
+    let clearAlpha = this.renderer.getClearAlpha();
+    if (isTransparent) {
+      this.renderer.setClearAlpha(0.0);
+    }
     this.ResizeRenderer(renderWidth, renderHeight);
     this.Render();
     let url = this.renderer.domElement.toDataURL();
     this.ResizeRenderer(originalSize.width, originalSize.height);
+    this.renderer.setClearAlpha(clearAlpha);
     return url;
   }
 

@@ -2,6 +2,7 @@ import { Direction } from '../geometry/geometry.js';
 import { Model } from '../model/model.js';
 import { FinalizeModel } from '../model/modelfinalization.js';
 import { IsModelEmpty } from '../model/modelutils.js';
+import { Loc } from '../core/localization.js';
 
 export class ImporterBase
 {
@@ -51,14 +52,15 @@ export class ImporterBase
         }
 
         if (IsModelEmpty (this.model)) {
-            this.SetError ('The model doesn\'t contain any meshes.');
+            this.SetError (Loc ('The model doesn\'t contain any meshes.'));
             callbacks.onError ();
             callbacks.onComplete ();
             return;
         }
 
         FinalizeModel (this.model, {
-            getDefaultMaterialColor : this.callbacks.getDefaultMaterialColor
+            defaultLineMaterialColor : this.callbacks.getDefaultLineMaterialColor (),
+            defaultMaterialColor : this.callbacks.getDefaultMaterialColor ()
         });
 
         callbacks.onSuccess ();

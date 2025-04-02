@@ -8,6 +8,7 @@ import { Mesh } from '../model/mesh.js';
 import { Triangle } from '../model/triangle.js';
 import { ImporterBase } from './importerbase.js';
 import { ParametersFromLine, ReadLines, UpdateMaterialTransparency } from './importerutils.js';
+import { Loc } from '../core/localization.js';
 
 const PlyHeaderCheckResult =
 {
@@ -177,11 +178,11 @@ export class ImporterPly extends ImporterBase
             }
         } else {
             if (checkResult === PlyHeaderCheckResult.NoVertices) {
-                this.SetError ('The model contains no vertices.');
+                this.SetError (Loc ('The model contains no vertices.'));
             } else if (checkResult === PlyHeaderCheckResult.NoFaces) {
-                this.SetError ('The model contains no faces.');
+                this.SetError (Loc ('The model contains no faces.'));
             } else {
-                this.SetError ('Invalid header information.');
+                this.SetError (Loc ('Invalid header information.'));
             }
         }
         onFinish ();

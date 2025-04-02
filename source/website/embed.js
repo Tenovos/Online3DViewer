@@ -48,9 +48,9 @@ export class Embed {
       let environmentSettings = new EnvironmentSettings(envMapTextures, bgIsEnvMap);
       this.viewer.SetEnvironmentMapSettings(environmentSettings);
 
-      let cameraMode = this.hashHandler.GetCameraModeFromHash();
-      if (cameraMode !== null) {
-        this.viewer.SetCameraMode(cameraMode);
+      let projectionMode = this.hashHandler.GetProjectionModeFromHash();
+      if (projectionMode !== null) {
+        this.viewer.SetProjectionMode(projectionMode);
       }
       let background = this.hashHandler.GetBackgroundFromHash();
       if (background !== null) {
@@ -64,6 +64,10 @@ export class Embed {
       let defaultColor = this.hashHandler.GetDefaultColorFromHash();
       if (defaultColor !== null) {
         settings.defaultColor = defaultColor;
+      }
+      let defaultLineColor = this.hashHandler.GetDefaultLineColorFromHash();
+      if (defaultLineColor !== null) {
+        settings.defaultLineColor = defaultLineColor;
       }
       let inputFiles = InputFilesFromUrls(urls);
       this.modelLoaderUI.LoadModel(inputFiles, settings, {

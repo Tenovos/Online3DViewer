@@ -4,6 +4,7 @@ import { ShowMessageDialog } from './dialogs.js';
 import { ButtonDialog, ProgressDialog } from './dialog.js';
 import { AddSvgIconElement } from './utils.js';
 import { ImportErrorCode } from '../engine/import/importer.js';
+import { Loc } from '../engine/core/localization.js';
 
 export class ThreeModelLoaderUI {
   constructor() {
@@ -22,7 +23,7 @@ export class ThreeModelLoaderUI {
         this.CloseDialogIfOpen();
         callbacks.onStart();
         progressDialog = new ProgressDialog();
-        progressDialog.Init('Loading Model');
+        progressDialog.Init(Loc('Loading Model'));
         progressDialog.Open();
       },
       onFileListProgress: (current, total) => {
@@ -37,10 +38,10 @@ export class ThreeModelLoaderUI {
         });
       },
       onImportStart: () => {
-        progressDialog.SetText('Importing Model');
+        progressDialog.SetText(Loc('Importing Model'));
       },
       onVisualizationStart: () => {
-        progressDialog.SetText('Visualizing Model');
+        progressDialog.SetText(Loc('Visualizing Model'));
       },
       onModelFinished: (importResult, threeObject) => {
         progressDialog.Close();
@@ -66,43 +67,38 @@ export class ThreeModelLoaderUI {
   }
 
   ShowErrorDialog(importError) {
-    // Include Name Parameter for Error Dialog
     if (importError.code === ImportErrorCode.NoImportableFile) {
       return ShowMessageDialog(
-        'Something went wrong',
-        'No importable file found.',
-        null,
-        'error'
+        Loc('Something went wrong'),
+        Loc('No importable file found.'),
+        null
       );
     } else if (importError.code === ImportErrorCode.FailedToLoadFile) {
       return ShowMessageDialog(
-        'Something went wrong',
-        'Failed to load file for import.',
-        'The remote server refused to fulfill the request. Check if the url is correct, and make sure that CORS requests are allowed on the remote server.',
-        'error'
+        Loc('Something went wrong'),
+        Loc('Failed to load file for import.'),
+        Loc('The remote server refused to fulfill the request. Check if the url is correct, and make sure that CORS requests are allowed on the remote server.')
       );
     } else if (importError.code === ImportErrorCode.ImportFailed) {
       return ShowMessageDialog(
-        'Something went wrong',
-        'Failed to import model.',
-        importError.message,
-        'error'
+        Loc('Something went wrong'),
+        Loc('Failed to import model.'),
+        importError.message
       );
     } else {
       return ShowMessageDialog(
-        'Something went wrong',
-        'Unknown error.',
-        null,
-        'error'
+        Loc('Something went wrong'),
+        Loc('Unknown error.'),
+        null
       );
     }
   }
 
   ShowFileSelectorDialog(fileNames, onSelect) {
     let dialog = new ButtonDialog();
-    let contentDiv = dialog.Init('Select Model', [
+    let contentDiv = dialog.Init(Loc('Select Model'), [
       {
-        name: 'Cancel',
+        name: Loc('Cancel'),
         subClass: 'outline',
         onClick() {
           dialog.Close();
@@ -113,7 +109,7 @@ export class ThreeModelLoaderUI {
       onSelect(null);
     });
 
-    let text = 'Multiple importable models found. Select the model you would like to import from the list below.';
+    let text = Loc('Multiple importable models found. Select the model you would like to import from the list below.');
     AddDiv(contentDiv, 'ov_dialog_message', text);
 
     let fileListSection = AddDiv(contentDiv, 'ov_dialog_section');

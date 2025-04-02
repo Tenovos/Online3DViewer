@@ -7,7 +7,7 @@
 
 	<title>Online 3D Viewer</title>
 
-	<script type="text/javascript" src="../build/o3dv.min-dev.js"></script>
+	<script type="text/javascript" src="../build/engine_dev/o3dv.min.js"></script>
 
     <style>
         div.online_3d_viewer
@@ -23,9 +23,15 @@
         function OnModelLoaded (model)
         {
             let calculationDiv = document.getElementById ('calculation_result');
+            let boundingBox = OV.GetBoundingBox (model);
             calculationDiv.innerHTML =
                 'Surface area: ' + OV.CalculateSurfaceArea (model).toFixed (2) + '<br>' +
-                'Volume: ' + OV.CalculateVolume (model).toFixed (2) + '<br>';
+                'Volume: ' + OV.CalculateVolume (model).toFixed (2) + '<br>' +
+                'Size: (' +
+                    (boundingBox.max.x - boundingBox.min.x) + ', ' +
+                    (boundingBox.max.y - boundingBox.min.y) + ', ' +
+                    (boundingBox.max.z - boundingBox.min.z) +
+                ')<br>';
         }
 
         window.addEventListener ('load', () => {

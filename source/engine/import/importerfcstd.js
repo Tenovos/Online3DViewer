@@ -1,13 +1,13 @@
 import { Direction } from '../geometry/geometry.js';
 import { ImporterBase } from './importerbase.js';
 import { GetFileExtension } from '../io/fileutils.js';
-import { GetExternalLibPath } from '../io/externallibs.js';
 import { ConvertThreeGeometryToMesh } from '../threejs/threeutils.js';
 import { ArrayBufferToUtf8String } from '../io/bufferutils.js';
-import { Node, NodeType } from '../model/node.js';
-import { ColorToMaterialConverter } from './importerutils.js';
+import { Node } from '../model/node.js';
+import { ColorToMaterialConverter, CreateOcctWorker } from './importerutils.js';
 import { RGBAColor } from '../model/color.js';
 import { Property, PropertyGroup, PropertyType } from '../model/property.js';
+import { Loc } from '../core/localization.js';
 
 import * as fflate from 'fflate';
 
@@ -105,7 +105,7 @@ class FreeCadDocument
             return false;
         }
 
-        this.properties = new PropertyGroup ('Properties');
+        this.properties = new PropertyGroup (Loc ('Properties'));
         let documentElements = documentXml.getElementsByTagName ('Document');
         for (let documentElement of documentElements) {
             for (let childNode of documentElement.childNodes) {
@@ -140,7 +140,7 @@ class FreeCadDocument
                 }
 
                 let object = this.objectData.get (name);
-                object.properties = new PropertyGroup ('Properties');
+                object.properties = new PropertyGroup (Loc ('Properties'));
                 for (let childNode of objectElement.childNodes) {
                     if (childNode.tagName === 'Properties') {
                         this.GetPropertiesFromElement (childNode, object.properties);
@@ -322,7 +322,7 @@ export class ImporterFcstd extends ImporterBase
     {
         let result = this.document.Init (fileContent);
         if (result === DocumentInitResult.NoDocumentXml) {
-            this.SetError ('No Document.xml found.');
+            this.SetError (Loc ('No Document.xml found.'));
             onFinish ();
             return;
         }
@@ -333,7 +333,7 @@ export class ImporterFcstd extends ImporterBase
 
         let objectsToConvert = this.document.GetObjectListToConvert ();
         if (objectsToConvert.length === 0) {
-            this.SetError ('No importable object found.');
+            this.SetError (Loc ('No importable object found.'));
             onFinish ();
             return;
         }
@@ -343,40 +343,43 @@ export class ImporterFcstd extends ImporterBase
 
     ConvertObjects (objects, onFinish)
     {
-        let workerPath = GetExternalLibPath ('loaders/occt-import-js-worker.js');
-        this.worker = new Worker (workerPath);
+        CreateOcctWorker ().then ((worker) => {
+            this.worker = worker;
+            this.worker.addEventListener ('message', (ev) => {
+                onFileConverted (ev.data);
+            });
 
-        let convertedObjectCount = 0;
-        let colorToMaterial = new ColorToMaterialConverter (this.model);
-        let onFileConverted = (resultContent) => {
-            if (resultContent !== null) {
-                let currentObject = objects[convertedObjectCount];
-                this.OnFileConverted (currentObject, resultContent, colorToMaterial);
-            }
-            convertedObjectCount += 1;
-            if (convertedObjectCount === objects.length) {
-                onFinish ();
-            } else {
-                let currentObject = objects[convertedObjectCount];
-                this.worker.postMessage ({
-                    format : 'brep',
-                    buffer : currentObject.fileContent
-                });
-            }
-        };
+            this.worker.addEventListener ('error', (ev) => {
+                onFileConverted (null);
+            });
 
-        this.worker.addEventListener ('message', (ev) => {
-            onFileConverted (ev.data);
-        });
+            let convertedObjectCount = 0;
+            let colorToMaterial = new ColorToMaterialConverter (this.model);
+            let onFileConverted = (resultContent) => {
+                if (resultContent !== null) {
+                    let currentObject = objects[convertedObjectCount];
+                    this.OnFileConverted (currentObject, resultContent, colorToMaterial);
+                }
+                convertedObjectCount += 1;
+                if (convertedObjectCount === objects.length) {
+                    onFinish ();
+                } else {
+                    let currentObject = objects[convertedObjectCount];
+                    this.worker.postMessage ({
+                        format : 'brep',
+                        buffer : currentObject.fileContent
+                    });
+                }
+            };
 
-        this.worker.addEventListener ('error', (ev) => {
-            onFileConverted (null);
-        });
-
-        let currentObject = objects[convertedObjectCount];
-        this.worker.postMessage ({
-            format : 'brep',
-            buffer : currentObject.fileContent
+            let currentObject = objects[convertedObjectCount];
+            this.worker.postMessage ({
+                format : 'brep',
+                buffer : currentObject.fileContent
+            });
+        }).catch (() => {
+            this.SetError (Loc ('Failed to load occt-import-js.'));
+            onFinish ();
         });
     }
 
@@ -387,7 +390,6 @@ export class ImporterFcstd extends ImporterBase
         }
 
         let objectNode = new Node ();
-        objectNode.SetType (NodeType.GroupNode);
         if (object.shapeName !== null) {
             objectNode.SetName (object.shapeName);
         }
@@ -403,7 +405,7 @@ export class ImporterFcstd extends ImporterBase
                     object.color.a
                 );
             }
-            let mesh = ConvertThreeGeometryToMesh (resultMesh, materialIndex);
+            let mesh = ConvertThreeGeometryToMesh (resultMesh, materialIndex, null);
             if (object.shapeName !== null) {
                 let indexString = objectMeshIndex.toString ().padStart (3, '0');
                 mesh.SetName (object.shapeName + ' ' + indexString);

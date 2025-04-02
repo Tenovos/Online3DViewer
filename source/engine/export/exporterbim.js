@@ -29,7 +29,7 @@ export class ExporterBim extends ExporterBase
     ExportContent (exporterModel, format, files, onFinish)
     {
         let bimContent = {
-            schema_version : '1.0.0',
+            schema_version : '1.1.0',
             meshes : [],
             elements : [],
             info : {}
@@ -38,7 +38,7 @@ export class ExporterBim extends ExporterBase
         this.ExportProperties (exporterModel.GetModel (), bimContent.info);
 
         let meshId = 0;
-        exporterModel.EnumerateTransformedMeshes ((mesh) => {
+        exporterModel.EnumerateTransformedMeshInstances ((mesh) => {
             let bimMesh = {
                 mesh_id : meshId,
                 coordinates : [],
@@ -83,9 +83,9 @@ export class ExporterBim extends ExporterBase
                 let triangle = mesh.GetTriangle (i);
                 let material = exporterModel.GetMaterial (triangle.mat);
                 let faceColor = {
-                    r : material.color.r,
-                    g : material.color.g,
-                    b : material.color.b,
+                    r : Math.round (material.color.r),
+                    g : Math.round (material.color.g),
+                    b : Math.round (material.color.b),
                     a : ColorComponentFromFloat (material.opacity),
                 };
                 faceColors.push (faceColor.r, faceColor.g, faceColor.b, faceColor.a);

@@ -3,37 +3,38 @@ import { CalculatePopupPositionToElementBottomRight, ShowListPopup } from './dia
 import { MaterialItem } from './navigatoritems.js';
 import { NavigatorPanel, NavigatorPopupButton } from './navigatorpanel.js';
 import { GetMaterialName, GetMeshName } from './utils.js';
+import { Loc, FLoc } from '../engine/core/localization.js';
 
 class NavigatorMeshesPopupButton extends NavigatorPopupButton
 {
     constructor (parentDiv)
     {
         super (parentDiv);
-        this.meshInfoArray = null;
+        this.meshInstanceArray = null;
     }
 
-    Update (meshInfoArray)
+    Update (meshInstanceArray)
     {
-        this.meshInfoArray = meshInfoArray;
-        if (this.meshInfoArray === null) {
+        this.meshInstanceArray = meshInstanceArray;
+        if (this.meshInstanceArray === null) {
             return;
         }
 
-        let meshesText = 'Meshes (' + this.meshInfoArray.length + ')';
+        let meshesText = FLoc ('Meshes ({0})', this.meshInstanceArray.length);
         this.buttonText.innerHTML = meshesText;
     }
 
     OnButtonClick ()
     {
-        if (this.meshInfoArray === null) {
+        if (this.meshInstanceArray === null) {
             return;
         }
 
         let meshItems = [];
-        for (let i = 0; i < this.meshInfoArray.length; i++) {
-            let meshInfo = this.meshInfoArray[i];
+        for (let i = 0; i < this.meshInstanceArray.length; i++) {
+            let meshInstance = this.meshInstanceArray[i];
             meshItems.push ({
-                name : GetMeshName (meshInfo.name)
+                name : GetMeshName (meshInstance.node.GetName (), meshInstance.mesh.GetName ())
             });
         }
 
@@ -46,15 +47,15 @@ class NavigatorMeshesPopupButton extends NavigatorPopupButton
                 return CalculatePopupPositionToElementBottomRight (this.button, contentDiv);
             },
             onHoverStart : (index) => {
-                const meshData = this.meshInfoArray[index];
-                this.callbacks.onMeshHover (meshData.meshId);
+                const meshInstance = this.meshInstanceArray[index];
+                this.callbacks.onMeshHover (meshInstance.id);
             },
             onHoverStop : (index) => {
                 this.callbacks.onMeshHover (null);
             },
             onClick : (index) => {
-                const meshData = this.meshInfoArray[index];
-                this.callbacks.onMeshSelected (meshData.meshId);
+                const meshInstance = this.meshInstanceArray[index];
+                this.callbacks.onMeshSelected (meshInstance.id);
             }
         });
     }
@@ -74,7 +75,7 @@ export class NavigatorMaterialsPanel extends NavigatorPanel
 
     GetName ()
     {
-        return 'Materials';
+        return Loc ('Materials');
     }
 
     GetIcon ()
@@ -137,8 +138,8 @@ export class NavigatorMaterialsPanel extends NavigatorPanel
         this.GetMaterialItem (materialIndex).SetSelected (isSelected);
     }
 
-    UpdateMeshList (meshInfoArray)
+    UpdateMeshList (meshInstanceArray)
     {
-        this.meshesButton.Update (meshInfoArray);
+        this.meshesButton.Update (meshInstanceArray);
     }
 }

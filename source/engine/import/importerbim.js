@@ -2,7 +2,7 @@ import { IsObjectEmpty } from '../core/core.js';
 import { Coord3D } from '../geometry/coord3d.js';
 import { Direction } from '../geometry/geometry.js';
 import { ArrayBufferToUtf8String } from '../io/bufferutils.js';
-import { Node, NodeType } from '../model/node.js';
+import { Node } from '../model/node.js';
 import { Mesh } from '../model/mesh.js';
 import { Triangle } from '../model/triangle.js';
 import { ImporterBase } from './importerbase.js';
@@ -11,6 +11,8 @@ import { Matrix } from '../geometry/matrix.js';
 import { Transformation } from '../geometry/transformation.js';
 import { ColorToMaterialConverter } from './importerutils.js';
 import { Property, PropertyGroup, PropertyType } from '../model/property.js';
+import { Unit } from '../model/unit.js';
+import { Loc } from '../core/localization.js';
 
 export class ImporterBim extends ImporterBase
 {
@@ -43,12 +45,14 @@ export class ImporterBim extends ImporterBase
 
     ImportContent (fileContent, onFinish)
     {
+        this.model.SetUnit (Unit.Meter);
+
         let textContent = ArrayBufferToUtf8String (fileContent);
         let bimJson = null;
         try {
             bimJson = JSON.parse (textContent);
         } catch (err) {
-            this.SetError ('Failed to parse bim file.');
+            this.SetError (Loc ('Failed to parse bim file.'));
             onFinish ();
             return;
         }
@@ -69,12 +73,16 @@ export class ImporterBim extends ImporterBase
 
     ImportElement (bimElement)
     {
-        let defaultMaterialIndex = this.colorToMaterial.GetMaterialIndex (
-            bimElement.color.r,
-            bimElement.color.g,
-            bimElement.color.b,
-            bimElement.color.a
-        );
+        let defaultMaterialIndex = null;
+        if (bimElement.color)
+        {
+            defaultMaterialIndex = this.colorToMaterial.GetMaterialIndex (
+                bimElement.color.r,
+                bimElement.color.g,
+                bimElement.color.b,
+                bimElement.color.a
+            );
+        }
 
         let rootNode = this.model.GetRootNode ();
 
@@ -95,7 +103,6 @@ export class ImporterBim extends ImporterBase
         let meshIndex = this.model.AddMesh (mesh);
 
         let elementNode = new Node ();
-        elementNode.SetType (NodeType.MeshNode);
         elementNode.AddMeshIndex (meshIndex);
 
         let translation = new Coord3D (0.0, 0.0, 0.0);
@@ -164,9 +171,9 @@ export class ImporterBim extends ImporterBase
         }
 
         let info = source.info;
-        let propertyGroup = new PropertyGroup ('Info');
-        AddProperty (propertyGroup, 'Guid', source.guid);
-        AddProperty (propertyGroup, 'Type', source.type);
+        let propertyGroup = new PropertyGroup (Loc ('Info'));
+        AddProperty (propertyGroup, Loc ('Guid'), source.guid);
+        AddProperty (propertyGroup, Loc ('Type'), source.type);
         for (let propertyName in info) {
             if (Object.prototype.hasOwnProperty.call (info, propertyName)) {
                 if (typeof info[propertyName] === 'string') {
