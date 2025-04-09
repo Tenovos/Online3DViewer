@@ -49,7 +49,7 @@
     "create_package": "npm run generate_docs && npm run build_engine_prod && npm run build_engine_module && npm run build_website_prod && npm run build_css_prod && run-python3 tools/create_package.py",
     "create_package_test": "npm run generate_docs && npm run build_engine_prod && npm run build_engine_module && npm run build_website_prod && npm run build_css_prod && run-python3 tools/create_package.py test",
     "generate_docs": "run-python3 tools/generate_docs.py",
-    "build_css_prod": "cleancss -o build/o3dv.website.min.css website/css/*",
+    "build_css_prod": "cleancss -o build/o3dv.website.min.css source/website/css/*",
     "build_dev": "npm run build_engine_dev && npm run build_website_dev",
     "build_engine_dev": "npm run update_engine_exports && esbuild source/engine/main.js --bundle --minify --global-name=OV --sourcemap --outfile=build/o3dv.min-dev.js",
     "build_engine_prod": "npm run update_engine_exports && esbuild source/engine/main.js --bundle --minify --global-name=OV --outfile=build/o3dv.min.js",

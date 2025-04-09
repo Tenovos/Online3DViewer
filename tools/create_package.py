@@ -83,7 +83,7 @@ def CreateEnginePackage (rootDir, engineDir, websiteDir):
 				zip.write (os.path.join (filePath, fileInDir), 'envmaps/' + file + '/' + fileInDir)
 		else:
 			zip.write (filePath, 'envmaps/' + file)
-	zip.write (os.path.join (rootDir, 'build', 'engine', 'o3dv.min.js'), 'o3dv.min.js')
+	zip.write (os.path.join (rootDir, 'build', 'o3dv.min.js'), 'o3dv.min.js')
 	zip.write (os.path.join (rootDir, 'LICENSE.md'), 'o3dv.license.md')
 	zip.close ()
 	return True
@@ -101,6 +101,8 @@ def Main (argv):
 		buildDir = os.path.join (rootDir, 'build', 'package_test')
 		Utils.PrintInfo ('Creating test build.')
 
+	if not os.path.exists (os.path.join (rootDir, 'build', 'website')):
+		os.makedirs (os.path.join (rootDir, 'build', 'website'))
 	websiteDir = os.path.join (buildDir, 'website')
 	engineDir = os.path.join (buildDir, 'engine')
 	if os.path.exists (buildDir):

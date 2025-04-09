@@ -10,9 +10,7 @@ cp -rf build deploy/
 cp -rf libs deploy/
 mkdir -p deploy/website/assets/envmaps
 cp -rf website/assets/envmaps/default deploy/website/assets/envmaps/
-cp -rf website/assets/envmaps/fishermans_bastion deploy/website/assets/envmaps/
 cp website/assets/envmaps/default.jpg deploy/website/assets/envmaps/
-cp website/assets/envmaps/fishermans_bastion.jpg deploy/website/assets/envmaps/
 cp website/assets/envmaps/noimage.jpg deploy/website/assets/envmaps/
 cp -rf website/assets/images deploy/website/assets/
 cp -rf source/website/css deploy/website/
@@ -22,5 +20,4 @@ cp website/viewer.html deploy/website/
 
 # Include Sample Models
 mkdir deploy/website/assets/models
-cp -rf website/assets/models deploy/website/assets
 # cp website/assets/models/car.glb deploy/website/assets/models/
