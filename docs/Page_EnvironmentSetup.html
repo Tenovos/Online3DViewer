@@ -49,12 +49,12 @@
 <div id="nav-Init3DViewerElements" class="navigation_item"><a href="Function_Init3DViewerElements.html" target="_self">Init3DViewerElements</a></div>
 <div id="nav-Init3DViewerFromFileList" class="navigation_item"><a href="Function_Init3DViewerFromFileList.html" target="_self">Init3DViewerFromFileList</a></div>
 <div id="nav-Init3DViewerFromUrlList" class="navigation_item"><a href="Function_Init3DViewerFromUrlList.html" target="_self">Init3DViewerFromUrlList</a></div>
-<div id="nav-SetExternalLibLocation" class="navigation_item"><a href="Function_SetExternalLibLocation.html" target="_self">SetExternalLibLocation</a></div>
 </div>
 <div class="navigation_section">
 <div class="navigation_title">Enums</div>
-<div id="nav-CameraMode" class="navigation_item"><a href="Enum_CameraMode.html" target="_self">CameraMode</a></div>
 <div id="nav-FileSource" class="navigation_item"><a href="Enum_FileSource.html" target="_self">FileSource</a></div>
+<div id="nav-NavigationMode" class="navigation_item"><a href="Enum_NavigationMode.html" target="_self">NavigationMode</a></div>
+<div id="nav-ProjectionMode" class="navigation_item"><a href="Enum_ProjectionMode.html" target="_self">ProjectionMode</a></div>
 </div>
 
 </div>
@@ -89,7 +89,6 @@ npm start</code></pre>
 <ul>
     <li><b>assets:</b> Various assets used in the code or in any other media platforms.</li>
     <li><b>docs:</b> Code of this documentation.</li>
-    <li><b>libs:</b> External libraries used by the solution.</li>
     <li><b>sandbox:</b> Various examples mostly for using the engine.</li>
     <li><b>source:</b> Source code of the engine and the website.
         <ul>
@@ -111,10 +110,10 @@ npm start</code></pre>
 <ul>
     <li><code class="inline">npm run build_dev</code>: Builds the development version of the engine and the website.</li>
     <li><code class="inline">npm run build_engine_dev</code>: Builds the development version of the engine.</li>
-    <li><code class="inline">npm run build_engine_prod</code>: Builds the production version of the engine.</li>
+    <li><code class="inline">npm run build_engine</code>: Builds the production version of the engine.</li>
     <li><code class="inline">npm run build_engine_module</code>: Builds the ES6 module version of the engine. This is the main entry point when using the npm package.</li>
     <li><code class="inline">npm run build_website_dev</code>: Builds the development version of the website.</li>
-    <li><code class="inline">npm run build_website_prod</code>: Builds the production version of the website.</li>
+    <li><code class="inline">npm run build_website</code>: Builds the production version of the website.</li>
 </ul>
 
 <p><b>Testing</b></p>
@@ -136,7 +135,6 @@ npm start</code></pre>
 <ul>
     <li><code class="inline">npm run generate_docs</code>: Generates this documentation.</li>
     <li><code class="inline">npm run generate_icon_font</code>: Generates the icon font used on the website.</li>
-    <li><code class="inline">npm run update_libs</code>: Updates the used external libraries.</li>
 </ul>
 
 </div>

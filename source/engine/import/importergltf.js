@@ -7,14 +7,15 @@ import { ArrayToQuaternion } from '../geometry/quaternion.js';
 import { Transformation } from '../geometry/transformation.js';
 import { BinaryReader } from '../io/binaryreader.js';
 import { ArrayBufferToUtf8String, Base64DataURIToArrayBuffer, GetFileExtensionFromMimeType } from '../io/bufferutils.js';
-import { LoadExternalLibrary } from '../io/externallibs.js';
 import { RGBColor, ColorComponentFromFloat, RGBColorFromFloatComponents, LinearToSRGB } from '../model/color.js';
 import { PhongMaterial, PhysicalMaterial, TextureMap } from '../model/material.js';
 import { Mesh } from '../model/mesh.js';
-import { Node, NodeType } from '../model/node.js';
+import { Node } from '../model/node.js';
 import { Property, PropertyGroup, PropertyType } from '../model/property.js';
 import { Triangle } from '../model/triangle.js';
 import { ImporterBase } from './importerbase.js';
+import { Loc, FLoc } from '../core/localization.js';
+import { LoadExternalLibrary } from './importerutils.js';
 
 const GltfComponentType =
 {
@@ -281,13 +282,13 @@ class GltfExtensions
             return;
         }
         if (this.draco === null && extensionsRequired.indexOf ('KHR_draco_mesh_compression') !== -1) {
-			LoadExternalLibrary ('loaders/draco_decoder.js').then (() => {
+			LoadExternalLibrary ('draco3d').then (() => {
                 DracoDecoderModule ().then ((draco) => {
                     this.draco = draco;
                     callbacks.onSuccess ();
                 });
             }).catch (() => {
-                callbacks.onError ('Failed to load draco decoder.');
+                callbacks.onError (Loc ('Failed to load draco decoder.'));
             });
         } else {
             callbacks.onSuccess ();
@@ -527,7 +528,7 @@ export class ImporterGltf extends ImporterBase
         let textContent = ArrayBufferToUtf8String (fileContent);
         let gltf = JSON.parse (textContent);
         if (gltf.asset.version !== '2.0') {
-            this.SetError ('Invalid glTF version.');
+            this.SetError (Loc ('Invalid glTF version.'));
             onFinish ();
             return;
         }
@@ -545,7 +546,7 @@ export class ImporterGltf extends ImporterBase
                 }
             }
             if (buffer === null) {
-                this.SetError ('One of the requested buffers is missing.');
+                this.SetError (Loc ('One of the requested buffers is missing.'));
                 onFinish ();
                 return;
             }
@@ -571,19 +572,19 @@ export class ImporterGltf extends ImporterBase
         let reader = new BinaryReader (fileContent, true);
         let magic = reader.ReadUnsignedInteger32 ();
         if (magic !== GltfConstants.GLTF_STRING) {
-            this.SetError ('Invalid glTF file.');
+            this.SetError (Loc ('Invalid glTF file.'));
             onFinish ();
             return;
         }
         let version = reader.ReadUnsignedInteger32 ();
         if (version !== 2) {
-            this.SetError ('Invalid glTF version.');
+            this.SetError (Loc ('Invalid glTF version.'));
             onFinish ();
             return;
         }
         let length = reader.ReadUnsignedInteger32 ();
         if (length !== reader.GetByteLength ()) {
-            this.SetError ('Invalid glTF file.');
+            this.SetError (Loc ('Invalid glTF file.'));
             onFinish ();
             return;
         }
@@ -608,7 +609,7 @@ export class ImporterGltf extends ImporterBase
     {
         let unsupportedExtensions = this.gltfExtensions.GetUnsupportedExtensions (gltf.extensionsRequired);
         if (unsupportedExtensions.length > 0) {
-            this.SetError ('Unsupported extension: ' + unsupportedExtensions.join (', ') + '.');
+            this.SetError (FLoc ('Unsupported extension: {0}.', unsupportedExtensions.join (', ')));
             onFinish ();
             return;
         }
@@ -641,33 +642,41 @@ export class ImporterGltf extends ImporterBase
             }
         }
 
-        this.ImportNodes (gltf);
-        this.ImportModelProperties (gltf);
+        this.ImportProperties (this.model, gltf.asset, Loc ('Asset properties'));
+        this.ImportScene (gltf);
     }
 
-    ImportModelProperties (gltf)
+    ImportProperties (modelObject, gltfObject, propertyGroupName)
     {
-        function ImportProperties (model, propertyGroupName, propertyObject)
-        {
-            let propertyGroup = new PropertyGroup (propertyGroupName);
-            for (let propertyName in propertyObject) {
-                if (Object.prototype.hasOwnProperty.call (propertyObject, propertyName)) {
-                    if (typeof propertyObject[propertyName] === 'string') {
-                        const property = new Property (PropertyType.Text, propertyName, propertyObject[propertyName]);
-                        propertyGroup.AddProperty (property);
-                    }
-                }
-            }
-            if (propertyGroup.PropertyCount () > 0) {
-                model.AddPropertyGroup (propertyGroup);
-            }
-            return propertyGroup;
+        if (gltfObject === undefined || gltfObject === null) {
+            return;
         }
 
-        ImportProperties (this.model, 'Asset properties', gltf.asset);
-        if (gltf.asset['extras']) {
-            ImportProperties (this.model, 'Extras', gltf.asset['extras']);
+        let propertyGroup = new PropertyGroup (propertyGroupName);
+        for (let propertyName in gltfObject) {
+            if (Object.prototype.hasOwnProperty.call (gltfObject, propertyName)) {
+                let property = null;
+                let propertyValue = gltfObject[propertyName];
+                if (typeof propertyValue === 'string') {
+                    property = new Property (PropertyType.Text, propertyName, propertyValue);
+                } else if (typeof propertyValue === 'number') {
+                    if (Number.isInteger (propertyValue)) {
+                        property = new Property (PropertyType.Integer, propertyName, propertyValue);
+                    } else {
+                        property = new Property (PropertyType.Number, propertyName, propertyValue);
+                    }
+                }
+                if (property !== null) {
+                    propertyGroup.AddProperty (property);
+                }
+            }
         }
+
+        if (propertyGroup.PropertyCount () === 0) {
+            return;
+        }
+
+        modelObject.AddPropertyGroup (propertyGroup);
     }
 
     GetDefaultScene (gltf)
@@ -790,6 +799,7 @@ export class ImporterGltf extends ImporterBase
     ImportMesh (gltf, gltfMesh)
     {
         let mesh = new Mesh ();
+
         this.model.AddMesh (mesh);
         if (gltfMesh.name !== undefined) {
             mesh.SetName (gltfMesh.name);
@@ -799,6 +809,8 @@ export class ImporterGltf extends ImporterBase
             let primitive = gltfMesh.primitives[i];
             this.ImportPrimitive (gltf, primitive, mesh);
         }
+
+        this.ImportProperties (mesh, gltfMesh.extras, Loc ('Mesh properties'));
     }
 
     ImportPrimitive (gltf, primitive, mesh)
@@ -982,17 +994,20 @@ export class ImporterGltf extends ImporterBase
         mesh.AddTriangle (triangle);
     }
 
-    ImportNodes (gltf)
+    ImportScene (gltf)
     {
         let scene = this.GetDefaultScene (gltf);
         if (scene === null) {
             return;
         }
+
         let rootNode = this.model.GetRootNode ();
         for (let nodeIndex of scene.nodes) {
             let gltfNode = gltf.nodes[nodeIndex];
             this.ImportNode (gltf, gltfNode, rootNode);
         }
+
+        this.ImportProperties (this.model, scene.extras, Loc ('Scene properties'));
     }
 
     ImportNode (gltf, gltfNode, parentNode)
@@ -1043,9 +1058,8 @@ export class ImporterGltf extends ImporterBase
         }
 
         if (gltfNode.mesh !== undefined) {
-            if (gltfNode.children === undefined || gltfNode.children.length === 0) {
-                node.SetType (NodeType.MeshNode);
-            }
+            let mesh = this.model.GetMesh (gltfNode.mesh);
+            this.ImportProperties (mesh, gltfNode.extras, Loc ('Node properties'));
             node.AddMeshIndex (gltfNode.mesh);
         }
     }

@@ -9,10 +9,10 @@
         "Service": "cloudfront.amazonaws.com"
       },
       "Action": "s3:GetObject",
-      "Resource": "",
+      "Resource": "arn:aws:s3:::tenovos-viewer-ninja/*",
       "Condition": {
         "StringEquals": {
-          "AWS:SourceArn": ""
+          "AWS:SourceArn": "arn:aws:cloudfront::497996453248:distribution/E2WMCDRHJLTQRK"
         }
       }
     }

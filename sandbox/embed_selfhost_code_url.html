@@ -7,7 +7,7 @@
 
 	<title>Online 3D Viewer</title>
 
-	<script type="text/javascript" src="../build/o3dv.min-dev.js"></script>
+	<script type="text/javascript" src="../build/engine_dev/o3dv.min.js"></script>
 
     <style>
         div.online_3d_viewer
@@ -21,9 +21,6 @@
 
     <script type='text/javascript'>
         window.addEventListener ('load', () => {
-            // set the location of the external libraries
-            OV.SetExternalLibLocation ('../libs');
-
             // get the parent element of the viewer
             let parentDiv = document.getElementById ('viewer');
 

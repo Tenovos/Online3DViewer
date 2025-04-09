@@ -45,6 +45,7 @@ describe ('Gltf Importer', function () {
                             vertexColorCount : 0,
                             normalCount : 1,
                             uvCount : 0,
+                            lineCount : 0,
                             triangleCount : 1,
                             boundingBox : {
                                 min : [0.0, 0.0, 0.0],
@@ -65,8 +66,7 @@ describe ('Gltf Importer', function () {
         let testFileList = [
             ['Box/glTF', 'Box.gltf'],
             ['Box/glTF-Embedded', 'Box.gltf'],
-            ['Box/glTF-Binary', 'Box.glb'],
-            ['Box/glTF-Draco', 'Box.gltf']
+            ['Box/glTF-Binary', 'Box.glb']
         ];
         let processed = 0;
         for (let i = 0; i < testFileList.length; i++) {
@@ -102,6 +102,7 @@ describe ('Gltf Importer', function () {
                             vertexColorCount : 0,
                             normalCount : 24,
                             uvCount : 0,
+                            lineCount : 0,
                             triangleCount : 12,
                             boundingBox : {
                                 min : [-0.5, -0.5, -0.5],
@@ -158,6 +159,7 @@ describe ('Gltf Importer', function () {
                             vertexColorCount : 24,
                             normalCount : 24,
                             uvCount : 24,
+                            lineCount : 0,
                             triangleCount : 12,
                             boundingBox : {
                                 min : [-0.5, -0.5, -0.5],
@@ -214,6 +216,7 @@ describe ('Gltf Importer', function () {
                             vertexColorCount : 0,
                             normalCount : 24,
                             uvCount : 0,
+                            lineCount : 0,
                             triangleCount : 12,
                             boundingBox : {
                                 min : [-0.5, -0.5, -0.5],
@@ -270,6 +273,7 @@ describe ('Gltf Importer', function () {
                             vertexColorCount : 0,
                             normalCount : 24,
                             uvCount : 24,
+                            lineCount : 0,
                             triangleCount : 12,
                             boundingBox : {
                                 min : [-0.5, -0.5, -0.5],
@@ -324,6 +328,7 @@ describe ('Gltf Importer', function () {
                             vertexColorCount : 0,
                             normalCount : 3,
                             uvCount : 0,
+                            lineCount : 0,
                             triangleCount : 1,
                             boundingBox : {
                                 min : [0.0, 0.0, 0.0],
@@ -336,6 +341,7 @@ describe ('Gltf Importer', function () {
                             vertexColorCount : 0,
                             normalCount : 3,
                             uvCount : 0,
+                            lineCount : 0,
                             triangleCount : 1,
                             boundingBox : {
                                 min : [1.0, 0.0, 0.0],
@@ -381,7 +387,8 @@ describe ('Gltf Importer', function () {
                             vertexColorCount: 0,
                             normalCount: 78,
                             uvCount: 0,
-                            triangleCount: 38,
+                            lineCount : 0,
+                            triangleCount : 38,
                             boundingBox : {
                                 min: [ -0.6921195564310951, -1.0785199551363698, -5.330651201963446 ],
                                 max: [ 1.0439303242310798, 2.868914373727357, -4.66934876823423 ]
@@ -393,7 +400,8 @@ describe ('Gltf Importer', function () {
                             vertexColorCount: 0,
                             normalCount: 50,
                             uvCount: 0,
-                            triangleCount: 26,
+                            lineCount : 0,
+                            triangleCount : 26,
                             boundingBox : {
                                 min: [ 0.8097413778305054, 2.8717148303985596, -5.33065128326416 ],
                                 max: [ 1.4936277866363525, 3.9211390018463135, -4.66934871673584 ]
@@ -405,7 +413,8 @@ describe ('Gltf Importer', function () {
                             vertexColorCount: 0,
                             normalCount: 50,
                             uvCount: 0,
-                            triangleCount: 26,
+                            lineCount : 0,
+                            triangleCount : 26,
                             boundingBox : {
                                 min: [ -1.1686336994171143, -5.330650806427002, 2.93727445602417 ],
                                 max: [ -0.46912679076194763, -4.66934871673584, 3.9916374683380127 ]
@@ -417,7 +426,8 @@ describe ('Gltf Importer', function () {
                             vertexColorCount: 0,
                             normalCount: 78,
                             uvCount: 0,
-                            triangleCount: 38,
+                            lineCount : 0,
+                            triangleCount : 38,
                             boundingBox : {
                                 min: [ -0.9557393651589479, -5.330651177643153, -1.06505742884149 ],
                                 max: [ 0.6167901044859734, -4.6693486435429055, 2.934442924096579 ]
@@ -429,7 +439,8 @@ describe ('Gltf Importer', function () {
                             vertexColorCount: 0,
                             normalCount: 78,
                             uvCount: 0,
-                            triangleCount: 38,
+                            lineCount : 0,
+                            triangleCount : 38,
                             boundingBox : {
                                 min: [ -5.330651171390089, -1.0326269494863676, -0.6059335185163844 ],
                                 max: [ -4.669348828609911, 2.9885841671721116, 0.8202131194767724 ]
@@ -441,7 +452,8 @@ describe ('Gltf Importer', function () {
                             vertexColorCount: 0,
                             normalCount: 54,
                             uvCount: 0,
-                            triangleCount: 26,
+                            lineCount : 0,
+                            triangleCount : 26,
                             boundingBox : {
                                 min: [ -5.33065128326416, 2.991360902786255, -0.012430161237716675 ],
                                 max: [ -4.66934871673584, 4.039160251617432, 0.6999828815460205 ]
@@ -453,7 +465,8 @@ describe ('Gltf Importer', function () {
                             vertexColorCount: 0,
                             normalCount: 52,
                             uvCount: 0,
-                            triangleCount: 26,
+                            lineCount : 0,
+                            triangleCount : 26,
                             boundingBox : {
                                 min: [ -1.3648574352264404, 2.9005930423736572, 4.66934871673584 ],
                                 max: [ -0.6740907430648804, 3.9529545307159424, 5.33065128326416 ]
@@ -465,7 +478,8 @@ describe ('Gltf Importer', function () {
                             vertexColorCount: 0,
                             normalCount: 74,
                             uvCount: 0,
-                            triangleCount: 38,
+                            lineCount : 0,
+                            triangleCount : 38,
                             boundingBox : {
                                 min: [ -1.009571011381568, -1.074115497823536, 4.669348895549774 ],
                                 max: [ 0.6625885973069405, 2.8977772707193465, 5.330651104450226 ]
@@ -477,7 +491,8 @@ describe ('Gltf Importer', function () {
                             vertexColorCount: 0,
                             normalCount: 54,
                             uvCount: 0,
-                            triangleCount: 26,
+                            lineCount : 0,
+                            triangleCount : 26,
                             boundingBox : {
                                 min: [ 4.66934871673584, 2.4595587253570557, -2.553251266479492 ],
                                 max: [ 5.33065128326416, 3.432579517364502, -1.7226401567459106 ]
@@ -489,7 +504,8 @@ describe ('Gltf Importer', function () {
                             vertexColorCount: 0,
                             normalCount: 78,
                             uvCount: 0,
-                            triangleCount: 38,
+                            lineCount : 0,
+                            triangleCount : 38,
                             boundingBox : {
                                 min: [ 4.669348835945129, -1.0589144181932033, -1.7207290818192755 ],
                                 max: [ 5.330651164054871, 2.4574561383341145, 0.9159925616542917 ]
@@ -501,7 +517,8 @@ describe ('Gltf Importer', function () {
                             vertexColorCount: 0,
                             normalCount: 52,
                             uvCount: 0,
-                            triangleCount: 26,
+                            lineCount : 0,
+                            triangleCount : 26,
                             boundingBox : {
                                 min: [ 2.8218495845794678, 4.669349193572998, -1.6833229064941406 ],
                                 max: [ 3.864471435546875, 5.33065128326416, -1.0113166570663452 ]
@@ -513,7 +530,8 @@ describe ('Gltf Importer', function () {
                             vertexColorCount: 0,
                             normalCount: 78,
                             uvCount: 0,
-                            triangleCount: 38,
+                            lineCount : 0,
+                            triangleCount : 38,
                             boundingBox : {
                                 min: [ -1.0826615032554154, 4.669348806142807, -1.093071740019906 ],
                                 max: [ 2.8190779754834807, 5.3306513130664825, 0.7348238365226794 ]
@@ -525,7 +543,8 @@ describe ('Gltf Importer', function () {
                             vertexColorCount: 0,
                             normalCount: 272,
                             uvCount: 0,
-                            triangleCount: 140,
+                            lineCount : 0,
+                            triangleCount : 140,
                             boundingBox : {
                                 min: [ -5.000001907348633, -5, -5.000001907348633 ],
                                 max: [ 5.000002384185791, 5, 5.000002861022949 ]
@@ -566,6 +585,7 @@ describe ('Gltf Importer', function () {
                             vertexColorCount : 0,
                             normalCount : 2,
                             uvCount : 0,
+                            lineCount : 0,
                             triangleCount : 2,
                             boundingBox : {
                                 min : [-0.5, -0.5, 0.0],
@@ -603,6 +623,7 @@ describe ('Gltf Importer', function () {
                             vertexColorCount : 0,
                             normalCount : 2,
                             uvCount : 0,
+                            lineCount : 0,
                             triangleCount : 2,
                             boundingBox : {
                                 min : [-0.5, -0.5, 0.0],
@@ -641,6 +662,7 @@ describe ('Gltf Importer', function () {
                             vertexColorCount : 0,
                             normalCount : 12,
                             uvCount : 0,
+                            lineCount : 0,
                             triangleCount : 12,
                             boundingBox : {
                                 min : [0.0, 0.0, 0.0],
@@ -655,6 +677,94 @@ describe ('Gltf Importer', function () {
                 }
             });
         }
+    });
+
+    it ('Properties', function (done) {
+        let testFileList = [
+            ['Properties', 'properties.gltf'],
+            ['Properties', 'properties.glb']
+        ];
+        let processed = 0;
+        for (let i = 0; i < testFileList.length; i++) {
+            let testFile = testFileList[i];
+            ImportGltfFile (testFile[0], testFile[1], function (model) {
+                assert.ok (OV.CheckModel (model));
+                assert.equal (model.PropertyGroupCount (), 2);
+                assert.equal (model.GetPropertyGroup (0).PropertyCount (), 2);
+                assert.equal (model.GetPropertyGroup (1).PropertyCount (), 3);
+
+                let firstMesh = model.GetMesh (0);
+                assert.equal (firstMesh.PropertyGroupCount (), 2);
+                assert.equal (firstMesh.GetPropertyGroup (0).PropertyCount (), 2);
+                assert.equal (firstMesh.GetPropertyGroup (1).PropertyCount (), 2);
+
+                processed += 1;
+                if (processed == testFileList.length) {
+                    done ();
+                }
+            });
+        }
+    });
+
+    it ('CubeHierarchy', function (done) {
+        let testFile = ['CubeHierarchy', 'CubeHierarchy.gltf']
+        ImportGltfFile (testFile[0], testFile[1], function (model) {
+            assert.ok (OV.CheckModel (model));
+            assert.strictEqual (model.MeshCount (), 3);
+            assert.strictEqual (model.MeshInstanceCount (), 4);
+            assert.deepStrictEqual (ModelNodesToTree (model), {
+                name : '<Root>',
+                childNodes : [
+                    {
+                        name : 'Parent node 1',
+                        childNodes : [
+                            {
+                                name : 'Child node 1',
+                                childNodes : [
+                                    {
+                                        name : '',
+                                        childNodes : [],
+                                        meshNames : ['Green cube']
+                                    }
+                                ],
+                                meshNames : []
+                            },
+                            {
+                                name : 'Child node 2',
+                                childNodes : [
+                                    {
+                                        name : '',
+                                        childNodes : [],
+                                        meshNames : ['Blue cube']
+                                    }
+                                ],
+                                meshNames : []
+                            },
+                            {
+                                name : '',
+                                childNodes : [],
+                                meshNames : ['Red cube']
+                            }
+                        ],
+                        meshNames : []
+                    },
+                    {
+                        name : 'Parent node 2',
+                        childNodes : [
+                            {
+                                name : '',
+                                childNodes : [],
+                                meshNames : ['Red cube']
+                            }
+                        ],
+                        meshNames : []
+                    }
+                ],
+                meshNames : []
+            });
+
+            done ();
+        });
     });
 });
 

@@ -118,6 +118,6 @@ aws s3 sync --profile $PROFILE ./deploy "s3://$BUCKET/$S3_PATH"
 
 # Create invalidation for CloudFront distribution
 echo "Creating invalidation for $DISTRIBUTION_ID"
-aws cloudfront create-invalidation --profile $PROFILE --distribution-id $DISTRIBUTION_ID --paths "/$BUCKET/*"
+aws cloudfront create-invalidation --profile $PROFILE --distribution-id $DISTRIBUTION_ID --paths "/*"
 
 echo "Done in $PROFILE"

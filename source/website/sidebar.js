@@ -18,11 +18,6 @@ export class Sidebar
         this.panelSet.ShowPanel (this.detailsPanel);
     }
 
-    IsPanelsle ()
-    {
-        return this.panelSet.IsPanelsVisible ();
-    }
-
     IsPanelsVisible ()
     {
         return this.panelSet.IsPanelsVisible ();
@@ -50,11 +45,11 @@ export class Sidebar
             getShadingType : () => {
                 return this.callbacks.getShadingType ();
             },
-            getCameraMode : () => {
-                return this.callbacks.getCameraMode ();
+            getProjectionMode : () => {
+                return this.callbacks.getProjectionMode ();
             },
-            hasDefaultMaterial : () => {
-                return this.callbacks.hasDefaultMaterial ();
+            getDefaultMaterials : () => {
+                return this.callbacks.getDefaultMaterials ();
             },
             onEnvironmentMapChanged : () => {
                 this.callbacks.onEnvironmentMapChanged ();
@@ -67,11 +62,13 @@ export class Sidebar
             },
             onEdgeDisplayChanged : () => {
                 this.callbacks.onEdgeDisplayChanged ();
-            },
-            onThemeChanged : () => {
-                this.callbacks.onThemeChanged ();
             }
         });
+    }
+
+    UpdateControlsStatus ()
+    {
+        this.settingsPanel.UpdateControlsStatus ();
     }
 
     UpdateControlsVisibility ()
@@ -100,9 +97,9 @@ export class Sidebar
         this.panelSet.Clear ();
     }
 
-    AddObject3DProperties (object3D)
+    AddObject3DProperties (model, object3D)
     {
-        this.detailsPanel.AddObject3DProperties (object3D);
+        this.detailsPanel.AddObject3DProperties (model, object3D);
     }
 
     AddMaterialProperties (material)

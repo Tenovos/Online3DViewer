@@ -1,7 +1,15 @@
 import { RGBColor } from '../model/color.js';
-import { ConvertColorToThreeColor, DisposeThreeObjects } from '../threejs/threeutils.js';
+import { ConvertColorToThreeColor, DisposeThreeObjects, GetLineSegmentsProjectedDistance } from '../threejs/threeutils.js';
 
 import * as THREE from 'three';
+
+const LineThresholdInPixels = 10.0;
+
+export const IntersectionMode =
+{
+	MeshOnly : 1,
+    MeshAndLine : 2
+};
 
 export function SetThreeMeshPolygonOffset (mesh, offset)
 {
@@ -119,14 +127,24 @@ export class ViewerMainModel
         this.edgeModel = new ViewerModel (this.scene);
 
         this.edgeSettings = new EdgeSettings (false, new RGBColor (0, 0, 0), 1);
+        this.hasLines = false;
+        this.hasPolygonOffset = false;
     }
 
     SetMainObject (mainObject)
     {
         this.mainModel.SetRootObject (mainObject);
+        this.hasLines = false;
+        this.hasPolygonOffset = false;
+
+        this.EnumerateLines ((line) => {
+            this.hasLines = true;
+        });
+
         if (this.edgeSettings.showEdges) {
             this.GenerateEdgeModel ();
         }
+        this.UpdatePolygonOffset ();
     }
 
     UpdateWorldMatrix ()
@@ -169,7 +187,6 @@ export class ViewerMainModel
 
         this.UpdateWorldMatrix ();
         this.EnumerateMeshes ((mesh) => {
-            SetThreeMeshPolygonOffset (mesh, true);
             let edges = new THREE.EdgesGeometry (mesh.geometry, this.edgeSettings.edgeThreshold);
             let line = new THREE.LineSegments (edges, new THREE.LineBasicMaterial ({
                 color: edgeColor
@@ -179,13 +196,15 @@ export class ViewerMainModel
             line.visible = mesh.visible;
             this.edgeModel.AddObject (line);
         });
+
+        this.UpdatePolygonOffset ();
     }
 
     GetBoundingBox (needToProcess)
     {
         let hasMesh = false;
         let boundingBox = new THREE.Box3 ();
-        this.EnumerateMeshes ((mesh) => {
+        this.EnumerateMeshesAndLines ((mesh) => {
             if (needToProcess (mesh.userData)) {
                 boundingBox.union (new THREE.Box3 ().setFromObject (mesh));
                 hasMesh = true;
@@ -221,9 +240,7 @@ export class ViewerMainModel
             return;
         }
 
-        this.EnumerateMeshes ((mesh) => {
-            SetThreeMeshPolygonOffset (mesh, false);
-        });
+        this.UpdatePolygonOffset ();
         this.edgeModel.Clear ();
     }
 
@@ -231,6 +248,26 @@ export class ViewerMainModel
     {
         this.mainModel.Traverse ((obj) => {
             if (obj.isMesh) {
+                enumerator (obj);
+            }
+        });
+    }
+
+    EnumerateLines (enumerator)
+    {
+        this.mainModel.Traverse ((obj) => {
+            if (obj.isLineSegments) {
+                enumerator (obj);
+            }
+        });
+    }
+
+    EnumerateMeshesAndLines (enumerator)
+    {
+        this.mainModel.Traverse ((obj) => {
+            if (obj.isMesh) {
+                enumerator (obj);
+            } else if (obj.isLineSegments) {
                 enumerator (obj);
             }
         });
@@ -245,7 +282,23 @@ export class ViewerMainModel
         });
     }
 
-    GetMeshIntersectionUnderMouse (mouseCoords, camera, width, height)
+    HasLinesOrEdges ()
+    {
+        return this.hasLines || this.edgeSettings.showEdges;
+    }
+
+    UpdatePolygonOffset ()
+    {
+        let needPolygonOffset = this.HasLinesOrEdges ();
+        if (needPolygonOffset !== this.hasPolygonOffset) {
+            this.EnumerateMeshes ((mesh) => {
+                SetThreeMeshPolygonOffset (mesh, needPolygonOffset);
+            });
+            this.hasPolygonOffset = needPolygonOffset;
+        }
+    }
+
+    GetMeshIntersectionUnderMouse (intersectionMode, mouseCoords, camera, width, height)
     {
         if (this.mainModel.IsEmpty ()) {
             return null;
@@ -255,15 +308,30 @@ export class ViewerMainModel
             return null;
         }
 
-        let raycaster = new THREE.Raycaster ();
         let mousePos = new THREE.Vector2 ();
         mousePos.x = (mouseCoords.x / width) * 2 - 1;
         mousePos.y = -(mouseCoords.y / height) * 2 + 1;
+
+        let raycaster = new THREE.Raycaster ();
         raycaster.setFromCamera (mousePos, camera);
+        raycaster.params.Line.threshold = 10.0;
+
         let iSectObjects = raycaster.intersectObject (this.mainModel.GetRootObject (), true);
         for (let i = 0; i < iSectObjects.length; i++) {
             let iSectObject = iSectObjects[i];
-            if (iSectObject.object.isMesh && iSectObject.object.visible) {
+            if (!iSectObject.object.visible) {
+                continue;
+            }
+            if (iSectObject.object.isMesh) {
+                return iSectObject;
+            } else if (iSectObject.object.isLineSegments) {
+                if (intersectionMode === IntersectionMode.MeshOnly) {
+                    continue;
+                }
+                let distance = GetLineSegmentsProjectedDistance (camera, width, height, iSectObject.object, mouseCoords);
+                if (distance > LineThresholdInPixels) {
+                    continue;
+                }
                 return iSectObject;
             }
         }

@@ -1,10 +1,11 @@
 import { Direction } from '../geometry/geometry.js';
-import { GetExternalLibPath } from '../io/externallibs.js';
 import { Node } from '../model/node.js';
 import { RGBColorFromFloatComponents } from '../model/color.js';
 import { ConvertThreeGeometryToMesh } from '../threejs/threeutils.js';
 import { ImporterBase } from './importerbase.js';
-import { ColorToMaterialConverter } from './importerutils.js';
+import { ColorToMaterialConverter, CreateOcctWorker } from './importerutils.js';
+import { Unit } from '../model/unit.js';
+import { Loc } from '../core/localization.js';
 
 export class ImporterOcct extends ImporterBase
 {
@@ -39,33 +40,47 @@ export class ImporterOcct extends ImporterBase
 
     ImportContent (fileContent, onFinish)
     {
-        let workerPath = GetExternalLibPath ('loaders/occt-import-js-worker.js');
-        this.worker = new Worker (workerPath);
-        this.worker.addEventListener ('message', (ev) => {
-            this.ImportResultJson (ev.data, onFinish);
-        });
-        this.worker.addEventListener ('error', (ev) => {
-            this.SetError ('Failed to load occt-import-js.');
-            onFinish ();
-        });
+        CreateOcctWorker ().then ((worker) => {
+            this.worker = worker;
+            this.worker.addEventListener ('message', (ev) => {
+                this.ImportResultJson (ev.data, onFinish);
+            });
+            this.worker.addEventListener ('error', (ev) => {
+                this.SetError (Loc ('Failed to load occt-import-js.'));
+                onFinish ();
+            });
 
-        let format = null;
-        if (this.extension === 'stp' || this.extension === 'step') {
-            format = 'step';
-        } else if (this.extension === 'igs' || this.extension === 'iges') {
-            format = 'iges';
-        } else if (this.extension === 'brp' || this.extension === 'brep') {
-            format = 'brep';
-        } else {
-            onFinish ();
-            return;
-        }
+            let format = null;
+            if (this.extension === 'stp' || this.extension === 'step') {
+                format = 'step';
+            } else if (this.extension === 'igs' || this.extension === 'iges') {
+                format = 'iges';
+            } else if (this.extension === 'brp' || this.extension === 'brep') {
+                format = 'brep';
+            } else {
+                onFinish ();
+                return;
+            }
 
-        let fileBuffer = new Uint8Array (fileContent);
-        this.worker.postMessage ({
-            format : format,
-            buffer : fileBuffer,
-            params : null
+            if (format === 'step' || format === 'iges') {
+                this.model.SetUnit (Unit.Millimeter);
+            }
+
+            let params = {
+                linearUnit: 'millimeter',
+                linearDeflectionType: 'bounding_box_ratio',
+                linearDeflection: 0.001,
+                angularDeflection: 0.5
+            };
+            let fileBuffer = new Uint8Array (fileContent);
+            this.worker.postMessage ({
+                format : format,
+                buffer : fileBuffer,
+                params : params
+            });
+        }).catch (() => {
+            this.SetError (Loc ('Failed to load occt-import-js.'));
+            onFinish ();
         });
     }
 
@@ -104,18 +119,19 @@ export class ImporterOcct extends ImporterBase
             let color = RGBColorFromFloatComponents (occtMesh.color[0], occtMesh.color[1], occtMesh.color[2]);
             materialIndex = colorToMaterial.GetMaterialIndex (color.r, color.g, color.b, null);
         }
-        let mesh = ConvertThreeGeometryToMesh (occtMesh, materialIndex);
+        let mesh = ConvertThreeGeometryToMesh (occtMesh, materialIndex, null);
         if (occtMesh.name) {
             mesh.SetName (occtMesh.name);
         }
-        if (occtMesh.face_colors) {
-            for (let faceColorGroup of occtMesh.face_colors) {
-                let faceColor = RGBColorFromFloatComponents (faceColorGroup.color[0], faceColorGroup.color[1], faceColorGroup.color[2]);
-                let faceMaterialIndex = colorToMaterial.GetMaterialIndex (faceColor.r, faceColor.g, faceColor.b, null);
-                for (let i = faceColorGroup.first; i <= faceColorGroup.last; i++) {
-                    let triangle = mesh.GetTriangle (i);
-                    triangle.SetMaterial (faceMaterialIndex);
-                }
+        for (let brepFace of occtMesh.brep_faces) {
+            if (brepFace.color === null) {
+                continue;
+            }
+            let faceColor = RGBColorFromFloatComponents (brepFace.color[0], brepFace.color[1], brepFace.color[2]);
+            let faceMaterialIndex = colorToMaterial.GetMaterialIndex (faceColor.r, faceColor.g, faceColor.b, null);
+            for (let i = brepFace.first; i <= brepFace.last; i++) {
+                let triangle = mesh.GetTriangle (i);
+                triangle.SetMaterial (faceMaterialIndex);
             }
         }
         return mesh;

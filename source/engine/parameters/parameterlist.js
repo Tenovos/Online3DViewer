@@ -1,6 +1,6 @@
 import { Coord3D } from '../geometry/coord3d.js';
 import { RGBAColor, RGBColor } from '../model/color.js';
-import { Camera, CameraMode } from '../viewer/camera.js';
+import { Camera, ProjectionMode } from '../viewer/camera.js';
 import { EdgeSettings } from '../viewer/viewermodel.js';
 
 export let ParameterConverter =
@@ -56,11 +56,11 @@ export let ParameterConverter =
         return cameraParameters;
     },
 
-    CameraModeToString : function (cameraMode)
+    ProjectionModeToString : function (projectionMode)
     {
-        if (cameraMode === CameraMode.Perspective) {
+        if (projectionMode === ProjectionMode.Perspective) {
             return 'perspective';
-        } else if (cameraMode === CameraMode.Orthographic) {
+        } else if (projectionMode === ProjectionMode.Orthographic) {
             return 'orthographic';
         }
         return null;
@@ -90,12 +90,12 @@ export let ParameterConverter =
         return camera;
     },
 
-    StringToCameraMode : function (str)
+    StringToProjectionMode : function (str)
     {
         if (str === 'perspective') {
-            return CameraMode.Perspective;
+            return ProjectionMode.Perspective;
         } else if (str === 'orthographic') {
-            return CameraMode.Orthographic;
+            return ProjectionMode.Orthographic;
         }
         return null;
     },
@@ -245,9 +245,9 @@ export class ParameterListBuilder
         return this;
     }
 
-    AddCameraMode (cameraMode)
+    AddProjectionMode (projectionMode)
     {
-        this.AddUrlPart ('cameramode', ParameterConverter.CameraModeToString (cameraMode));
+        this.AddUrlPart ('projectionmode', ParameterConverter.ProjectionModeToString (projectionMode));
         return this;
     }
 
@@ -266,6 +266,12 @@ export class ParameterListBuilder
     AddDefaultColor (color)
     {
         this.AddUrlPart ('defaultcolor', ParameterConverter.RGBColorToString (color));
+        return this;
+    }
+
+    AddDefaultLineColor (color)
+    {
+        this.AddUrlPart ('defaultlinecolor', ParameterConverter.RGBColorToString (color));
         return this;
     }
 
@@ -317,10 +323,13 @@ export class ParameterListParser
         return ParameterConverter.StringToCamera (keywordParams);
     }
 
-    GetCameraMode ()
+    GetProjectionMode ()
     {
-        let keywordParams = this.GetKeywordParams ('cameramode');
-        return ParameterConverter.StringToCameraMode (keywordParams);
+        let keywordParams = this.GetKeywordParams ('cameramode'); // for compatibility
+        if (keywordParams === null) {
+            keywordParams = this.GetKeywordParams ('projectionmode');
+        }
+        return ParameterConverter.StringToProjectionMode (keywordParams);
     }
 
     GetEnvironmentSettings ()
@@ -338,6 +347,12 @@ export class ParameterListParser
     GetDefaultColor ()
     {
         let colorParams = this.GetKeywordParams ('defaultcolor');
+        return ParameterConverter.StringToRGBColor (colorParams);
+    }
+
+    GetDefaultLineColor ()
+    {
+        let colorParams = this.GetKeywordParams ('defaultlinecolor');
         return ParameterConverter.StringToRGBColor (colorParams);
     }
 

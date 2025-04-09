@@ -18,6 +18,7 @@ function CreateTestModel ()
 
     let phongMaterial = new OV.PhongMaterial ();
     phongMaterial.name = 'Phong Material';
+    phongMaterial.color = new OV.RGBColor (0, 0, 0);
     phongMaterial.emissive = new OV.RGBColor (1, 1, 1);
     phongMaterial.opacity = 0.1;
     phongMaterial.transparent = true;
@@ -30,6 +31,7 @@ function CreateTestModel ()
 
     let phongMaterialTexture = new OV.PhongMaterial ();
     phongMaterialTexture.name = 'Phong Material With Texture';
+    phongMaterialTexture.color = new OV.RGBColor (0, 0, 0);
     phongMaterialTexture.emissive = new OV.RGBColor (1, 1, 1);
     phongMaterialTexture.opacity = 0.1;
     phongMaterialTexture.transparent = true;
@@ -47,6 +49,7 @@ function CreateTestModel ()
 
     let physicalMaterialTexture = new OV.PhysicalMaterial ();
     physicalMaterialTexture.name = 'Phong Material With Texture';
+    physicalMaterialTexture.color = new OV.RGBColor (0, 0, 0);
     physicalMaterialTexture.emissive = new OV.RGBColor (1, 1, 1);
     physicalMaterialTexture.opacity = 0.1;
     physicalMaterialTexture.transparent = true;
@@ -108,6 +111,39 @@ function CreateTestModel ()
     return model;
 }
 
+function CreateTestModelWithLines ()
+{
+    let model = new OV.Model ();
+
+    let phongMaterial = new OV.PhongMaterial ();
+    phongMaterial.name = 'Material';
+    phongMaterial.color = new OV.RGBColor (0, 0, 0);
+    model.AddMaterial (phongMaterial);
+
+    let meshOnly = new OV.Mesh ();
+    meshOnly.SetName ('Mesh Only');
+    meshOnly.AddVertex (new OV.Coord3D (0.0, 0.0, 0.0));
+    meshOnly.AddVertex (new OV.Coord3D (1.0, 0.0, 0.0));
+    meshOnly.AddVertex (new OV.Coord3D (0.0, 1.0, 0.0));
+    meshOnly.AddTriangle (new OV.Triangle (0, 1, 2).SetMaterial (0));
+    model.AddMeshToRootNode (meshOnly);
+
+    let meshAndLines = new OV.Mesh ();
+    meshAndLines.SetName ('Meshes and Lines');
+    meshAndLines.AddVertex (new OV.Coord3D (0.0, 0.0, 0.0));
+    meshAndLines.AddVertex (new OV.Coord3D (1.0, 0.0, 0.0));
+    meshAndLines.AddVertex (new OV.Coord3D (0.0, 1.0, 0.0));
+    meshAndLines.AddTriangle (new OV.Triangle (0, 1, 2).SetMaterial (0));
+    meshAndLines.AddVertex (new OV.Coord3D (0.0, 0.0, 1.0));
+    meshAndLines.AddVertex (new OV.Coord3D (1.0, 0.0, 1.0));
+    meshAndLines.AddVertex (new OV.Coord3D (0.0, 1.0, 1.0));
+    meshAndLines.AddLine (new OV.Line ([3, 4, 5]).SetMaterial (0));
+    model.AddMeshToRootNode (meshAndLines);
+
+    OV.FinalizeModel (model);
+    return model;
+}
+
 function ExportImport (model, format, extension, onReady)
 {
     let exporter = new OV.Exporter ();
@@ -119,14 +155,12 @@ function ExportImport (model, format, extension, onReady)
             let fileObjects = exportedFiles.map (file => new OV.InputFile (file.name, OV.FileSource.File, new FileObject ('', file.name, file.content)));
             importer.ImportFiles (fileObjects, settings, {
                 onLoadStart : function () {
-
                 },
                 onFileListProgress : (current, total) => {
                 },
                 onFileLoadProgress : (current, total) => {
                 },
                 onImportStart : function () {
-
                 },
                 onImportSuccess : function (importResult) {
                     onReady (importResult.model)
@@ -152,6 +186,7 @@ function CheckSingleMeshModel (model, model2)
     assert.strictEqual (model2.MaterialCount (), 1);
     assert.strictEqual (model2.MeshInstanceCount (), 1);
     assert.strictEqual (model.TriangleCount (), model2.TriangleCount ());
+    assert.strictEqual (model.LineSegmentCount (), model2.LineSegmentCount ());
     CheckModelBounds (model, model2);
 }
 
@@ -160,12 +195,21 @@ function CheckModel (model, model2)
     assert.strictEqual (model.MaterialCount (), model2.MaterialCount ());
     assert.strictEqual (model.MeshInstanceCount (), model2.MeshInstanceCount ());
     assert.strictEqual (model.TriangleCount (), model2.TriangleCount ());
+    assert.strictEqual (model.LineSegmentCount (), model2.LineSegmentCount ());
     CheckModelBounds (model, model2);
 }
 
 describe ('Export-Import Test', function () {
     it ('Export-Import Obj', function (done) {
         let model = CreateTestModel ();
+        ExportImport (model, OV.FileFormat.Text, 'obj', (model2) => {
+            CheckModel (model, model2);
+            done ();
+        });
+    });
+
+    it ('Export-Import Obj with Lines', function (done) {
+        let model = CreateTestModelWithLines ();
         ExportImport (model, OV.FileFormat.Text, 'obj', (model2) => {
             CheckModel (model, model2);
             done ();

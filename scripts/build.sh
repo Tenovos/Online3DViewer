@@ -13,7 +13,7 @@ cp -rf website/assets/envmaps/default deploy/website/assets/envmaps/
 cp website/assets/envmaps/default.jpg deploy/website/assets/envmaps/
 cp website/assets/envmaps/noimage.jpg deploy/website/assets/envmaps/
 cp -rf website/assets/images deploy/website/assets/
-cp -rf website/css deploy/website/
+cp -rf source/website/css deploy/website/
 cp website/embed.html deploy/website/
 cp website/index_min.html deploy/website/
 cp website/viewer.html deploy/website/

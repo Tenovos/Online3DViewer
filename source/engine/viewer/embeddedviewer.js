@@ -7,6 +7,7 @@ import { ParameterConverter } from '../parameters/parameterlist.js';
 import { ThreeModelLoader } from '../threejs/threemodelloader.js';
 import { Viewer } from './viewer.js';
 import { EnvironmentSettings } from './shadingmodel.js';
+import { Loc } from '../core/localization.js';
 
 /**
  * This is the main object for embedding the viewer on a website.
@@ -20,9 +21,11 @@ export class EmbeddedViewer
      * @param {object} parameters Parameters for embedding.
      * @param {Camera} [parameters.camera] Camera to use. If not specified, the default camera will
      * be used and the model will be fitted to the window.
-     * @param {CameraMode} [parameters.cameraMode] Camera projection mode.
+     * @param {ProjectionMode} [parameters.projectionMode] Camera projection mode.
      * @param {RGBAColor} [parameters.backgroundColor] Background color of the canvas.
      * @param {RGBColor} [parameters.defaultColor] Default color of the model. It has effect only
+     * if the imported model doesn't specify any color.
+     * @param {RGBColor} [parameters.defaultLineColor] Default line color of the model. It has effect only
      * if the imported model doesn't specify any color.
      * @param {EdgeSettings} [parameters.edgeSettings] Edge settings.
      * @param {EnvironmentSettings} [parameters.environmentSettings] Environment settings.
@@ -47,8 +50,8 @@ export class EmbeddedViewer
         let height = this.parentElement.clientHeight;
         this.viewer.Resize (width, height);
 
-        if (this.parameters.cameraMode) {
-            this.viewer.SetCameraMode (this.parameters.cameraMode);
+        if (this.parameters.projectionMode) {
+            this.viewer.SetProjectionMode (this.parameters.projectionMode);
         }
 
         if (this.parameters.backgroundColor) {
@@ -112,6 +115,9 @@ export class EmbeddedViewer
         if (this.parameters.defaultColor) {
             settings.defaultColor = this.parameters.defaultColor;
         }
+        if (this.parameters.defaultLineColor) {
+            settings.defaultLineColor = this.parameters.defaultLineColor;
+        }
 
         this.model = null;
         let progressDiv = null;
@@ -119,7 +125,7 @@ export class EmbeddedViewer
             onLoadStart : () => {
                 this.canvas.style.display = 'none';
                 progressDiv = document.createElement ('div');
-                progressDiv.innerHTML = 'Loading model...';
+                progressDiv.innerHTML = Loc ('Loading model...');
                 this.parentElement.appendChild (progressDiv);
             },
             onFileListProgress : (current, total) => {
@@ -127,10 +133,10 @@ export class EmbeddedViewer
             onFileLoadProgress : (current, total) => {
             },
             onImportStart : () => {
-                progressDiv.innerHTML = 'Importing model...';
+                progressDiv.innerHTML = Loc ('Importing model...');
             },
             onVisualizationStart : () => {
-                progressDiv.innerHTML = 'Visualizing model...';
+                progressDiv.innerHTML = Loc ('Visualizing model...');
             },
             onModelFinished : (importResult, threeObject) => {
                 this.parentElement.removeChild (progressDiv);
@@ -156,13 +162,13 @@ export class EmbeddedViewer
                 this.viewer.Render ();
             },
             onLoadError : (importError) => {
-                let message = 'Unknown error.';
+                let message = Loc ('Unknown error.');
                 if (importError.code === ImportErrorCode.NoImportableFile) {
-                    message = 'No importable file found.';
+                    message = Loc ('No importable file found.');
                 } else if (importError.code === ImportErrorCode.FailedToLoadFile) {
-                    message = 'Failed to load file for import.';
+                    message = Loc ('Failed to load file for import.');
                 } else if (importError.code === ImportErrorCode.ImportFailed) {
-                    message = 'Failed to import model.';
+                    message = Loc ('Failed to import model.');
                 }
                 if (importError.message !== null) {
                     message += ' (' + importError.message + ')';
@@ -243,9 +249,9 @@ export function Init3DViewerFromFileList (parentElement, models, parameters)
 
 /**
  * Loads all the models on the page. This function looks for all the elements with online_3d_viewer
- * class name, and loads the model according to the tag's parameters.
- * @param {function} onReady Callback that called when all models are loaded. It has one parameter
- * that is an array of the created {@link EmbeddedViewer} objects.
+ * class name, and loads the model according to the tag's parameters. It must be called after the
+ * document is loaded.
+ * @returns {EmbeddedViewer[]} Array of the created {@link EmbeddedViewer} objects.
  */
 export function Init3DViewerElements (onReady)
 {
@@ -257,10 +263,10 @@ export function Init3DViewerElements (onReady)
             camera = ParameterConverter.StringToCamera (cameraParams);
         }
 
-        let cameraMode = null;
-        let cameraModeParams = element.getAttribute ('cameramode');
+        let projectionMode = null;
+        let cameraModeParams = element.getAttribute ('projectionmode');
         if (cameraModeParams) {
-            cameraMode = ParameterConverter.StringToCameraMode (cameraModeParams);
+            projectionMode = ParameterConverter.StringToProjectionMode (cameraModeParams);
         }
 
         let backgroundColor = null;
@@ -273,6 +279,12 @@ export function Init3DViewerElements (onReady)
         let defaultColorParams = element.getAttribute ('defaultcolor');
         if (defaultColorParams) {
             defaultColor = ParameterConverter.StringToRGBColor (defaultColorParams);
+        }
+
+        let defaultLineColor = null;
+        let defaultLineColorParams = element.getAttribute ('defaultlinecolor');
+        if (defaultLineColorParams) {
+            defaultLineColor = ParameterConverter.StringToRGBColor (defaultLineColorParams);
         }
 
         let edgeSettings = null;
@@ -303,8 +315,9 @@ export function Init3DViewerElements (onReady)
 
         return Init3DViewerFromUrlList (element, modelUrls, {
             camera : camera,
-            cameraMode : cameraMode,
+            projectionMode : projectionMode,
             backgroundColor : backgroundColor,
+            defaultLineColor : defaultLineColor,
             defaultColor : defaultColor,
             edgeSettings : edgeSettings,
             environmentSettings : environmentSettings
@@ -312,15 +325,11 @@ export function Init3DViewerElements (onReady)
     }
 
     let viewerElements = [];
-    window.addEventListener ('load', () => {
-        let elements = document.getElementsByClassName ('online_3d_viewer');
-        for (let i = 0; i < elements.length; i++) {
-            let element = elements[i];
-            let viewerElement = LoadElement (element);
-            viewerElements.push (viewerElement);
-        }
-        if (onReady !== undefined && onReady !== null) {
-            onReady (viewerElements);
-        }
-    });
+    let elements = document.getElementsByClassName ('online_3d_viewer');
+    for (let i = 0; i < elements.length; i++) {
+        let element = elements[i];
+        let viewerElement = LoadElement (element);
+        viewerElements.push (viewerElement);
+    }
+    return viewerElements;
 }

@@ -5,8 +5,8 @@ import { Transformation } from '../geometry/transformation.js';
 import { Base64DataURIToArrayBuffer, CreateObjectUrl, GetFileExtensionFromMimeType } from '../io/bufferutils.js';
 import { GetFileExtension, GetFileName } from '../io/fileutils.js';
 import { PhongMaterial, TextureMap } from '../model/material.js';
-import { Node, NodeType } from '../model/node.js';
-import { ConvertThreeColorToColor, ConvertThreeGeometryToMesh } from '../threejs/threeutils.js';
+import { Node } from '../model/node.js';
+import { ConvertThreeColorToColor, ConvertThreeGeometryToMesh, ThreeLinearToSRGBColorConverter, ThreeSRGBToLinearColorConverter } from '../threejs/threeutils.js';
 import { ImporterBase } from './importerbase.js';
 
 import * as THREE from 'three';
@@ -15,12 +15,15 @@ import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
 import { ColladaLoader } from 'three/examples/jsm/loaders/ColladaLoader.js';
 import { VRMLLoader } from 'three/examples/jsm/loaders/VRMLLoader.js';
 import { ThreeMFLoader } from 'three/examples/jsm/loaders/3MFLoader.js';
+import { AMFLoader } from 'three/examples/jsm/loaders/AMFLoader.js';
 
 export class ImporterThreeBase extends ImporterBase
 {
     constructor ()
     {
         super ();
+
+        this.colorConverter = null;
     }
 
     CreateLoader (manager)
@@ -132,9 +135,6 @@ export class ImporterThreeBase extends ImporterBase
                 AddObject (importer, model, childObject, node);
             }
             if (threeObject.isMesh && importer.IsMeshVisible (threeObject)) {
-                if (threeObject.children.length === 0) {
-                    node.SetType (NodeType.MeshNode);
-                }
                 let mesh = importer.ConvertThreeMesh (threeObject);
                 let meshIndex = model.AddMesh (mesh);
                 node.AddMeshIndex (meshIndex);
@@ -155,7 +155,7 @@ export class ImporterThreeBase extends ImporterBase
     {
         let mesh = null;
         if (Array.isArray (threeMesh.material)) {
-            mesh = ConvertThreeGeometryToMesh (threeMesh.geometry, null);
+            mesh = ConvertThreeGeometryToMesh (threeMesh.geometry, null, this.colorConverter);
             if (threeMesh.geometry.attributes.color === undefined || threeMesh.geometry.attributes.color === null) {
                 let materialIndices = [];
                 for (let i = 0; i < threeMesh.material.length; i++) {
@@ -179,7 +179,7 @@ export class ImporterThreeBase extends ImporterBase
             }
         } else {
             const materialIndex = this.FindOrCreateMaterial (threeMesh.material);
-            mesh = ConvertThreeGeometryToMesh (threeMesh.geometry, materialIndex);
+            mesh = ConvertThreeGeometryToMesh (threeMesh.geometry, materialIndex, this.colorConverter);
         }
         if (threeMesh.name !== undefined && threeMesh.name !== null) {
             mesh.SetName (threeMesh.name);
@@ -193,7 +193,10 @@ export class ImporterThreeBase extends ImporterBase
             return this.materialIdToIndex.get (threeMaterial.id);
         }
         let material = this.ConvertThreeMaterial (threeMaterial);
-        let materialIndex = this.model.AddMaterial (material);
+        let materialIndex = null;
+        if (material !== null) {
+            materialIndex = this.model.AddMaterial (material);
+        }
         this.materialIdToIndex.set (threeMaterial.id, materialIndex);
         return materialIndex;
     }
@@ -250,14 +253,18 @@ export class ImporterThreeBase extends ImporterBase
             }
         }
 
+        if (threeMaterial.name === THREE.Loader.DEFAULT_MATERIAL_NAME) {
+            return null;
+        }
+
         let material = new PhongMaterial ();
         material.name = threeMaterial.name;
-        material.color = ConvertThreeColorToColor (threeMaterial.color);
+        material.color = this.ConvertThreeColor (threeMaterial.color);
         material.opacity = threeMaterial.opacity;
         material.transparent = threeMaterial.transparent;
         material.alphaTest = threeMaterial.alphaTest;
         if (threeMaterial.type === 'MeshPhongMaterial') {
-            material.specular = ConvertThreeColorToColor (threeMaterial.specular);
+            material.specular = this.ConvertThreeColor (threeMaterial.specular);
             material.shininess = threeMaterial.shininess / 100.0;
         }
         material.diffuseMap = CreateTexture (threeMaterial.map, this.objectUrlToFileName);
@@ -266,6 +273,14 @@ export class ImporterThreeBase extends ImporterBase
 
         return material;
     }
+
+    ConvertThreeColor (threeColor)
+    {
+        if (this.colorConverter !== null) {
+            threeColor = this.colorConverter.Convert (threeColor);
+        }
+        return ConvertThreeColorToColor (threeColor);
+    }
 }
 
 export class ImporterThreeFbx extends ImporterThreeBase
@@ -273,6 +288,7 @@ export class ImporterThreeFbx extends ImporterThreeBase
     constructor ()
     {
         super ();
+        this.colorConverter = new ThreeLinearToSRGBColorConverter ();
     }
 
     CanImportExtension (extension)
@@ -331,6 +347,7 @@ export class ImporterThreeWrl extends ImporterThreeBase
     constructor ()
     {
         super ();
+        this.colorConverter = new ThreeLinearToSRGBColorConverter ();
     }
 
     CanImportExtension (extension)
@@ -375,6 +392,7 @@ export class ImporterThree3mf extends ImporterThreeBase
     constructor ()
     {
         super ();
+        this.colorConverter = new ThreeSRGBToLinearColorConverter ();
     }
 
     CanImportExtension (extension)
@@ -390,6 +408,34 @@ export class ImporterThree3mf extends ImporterThreeBase
     CreateLoader (manager)
     {
         return new ThreeMFLoader (manager);
+    }
+
+    GetMainObject (loadedObject)
+    {
+        return loadedObject;
+    }
+}
+
+export class ImporterThreeAmf extends ImporterThreeBase
+{
+    constructor ()
+    {
+        super ();
+    }
+
+    CanImportExtension (extension)
+    {
+        return extension === 'amf';
+    }
+
+    GetUpDirection ()
+    {
+        return Direction.Z;
+    }
+
+    CreateLoader (manager)
+    {
+        return new AMFLoader (manager);
     }
 
     GetMainObject (loadedObject)

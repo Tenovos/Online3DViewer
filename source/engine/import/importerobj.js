@@ -2,12 +2,14 @@ import { Coord2D } from '../geometry/coord2d.js';
 import { Coord3D } from '../geometry/coord3d.js';
 import { Direction } from '../geometry/geometry.js';
 import { ArrayBufferToUtf8String } from '../io/bufferutils.js';
+import { Line } from '../model/line.js';
 import { RGBColor, RGBColorFromFloatComponents } from '../model/color.js';
 import { PhongMaterial, TextureMap } from '../model/material.js';
 import { Mesh } from '../model/mesh.js';
 import { Triangle } from '../model/triangle.js';
 import { ImporterBase } from './importerbase.js';
 import { NameFromLine, ParametersFromLine, ReadLines, UpdateMaterialTransparency } from './importerutils.js';
+import { Loc } from '../core/localization.js';
 
 class ObjMeshConverter
 {
@@ -22,30 +24,35 @@ class ObjMeshConverter
 
     AddVertex (globalIndex, globalVertices)
     {
-        return this.GetLocalIndex (globalIndex, globalVertices, this.globalToMeshVertices, (val) => {
+        return this.GetMeshIndex (globalIndex, globalVertices, this.globalToMeshVertices, (val) => {
             return this.mesh.AddVertex (new Coord3D (val.x, val.y, val.z));
         });
     }
 
     AddVertexColor (globalIndex, globalVertexColors)
     {
-        return this.GetLocalIndex (globalIndex, globalVertexColors, this.globalToMeshVertexColors, (val) => {
+        return this.GetMeshIndex (globalIndex, globalVertexColors, this.globalToMeshVertexColors, (val) => {
             return this.mesh.AddVertexColor (new RGBColor (val.r, val.g, val.b));
         });
     }
 
     AddNormal (globalIndex, globalNormals)
     {
-        return this.GetLocalIndex (globalIndex, globalNormals, this.globalToMeshNormals, (val) => {
+        return this.GetMeshIndex (globalIndex, globalNormals, this.globalToMeshNormals, (val) => {
             return this.mesh.AddNormal (new Coord3D (val.x, val.y, val.z));
         });
     }
 
     AddUV (globalIndex, globalUvs)
     {
-        return this.GetLocalIndex (globalIndex, globalUvs, this.globalToMeshUvs, (val) => {
+        return this.GetMeshIndex (globalIndex, globalUvs, this.globalToMeshUvs, (val) => {
             return this.mesh.AddTextureUV (new Coord2D (val.x, val.y));
         });
+    }
+
+    AddLine (line)
+    {
+        this.mesh.AddLine (line);
     }
 
     AddTriangle (triangle)
@@ -53,7 +60,7 @@ class ObjMeshConverter
         this.mesh.AddTriangle (triangle);
     }
 
-    GetLocalIndex (globalIndex, globalValueArray, globalToMeshIndices, valueAdderFunc)
+    GetMeshIndex (globalIndex, globalValueArray, globalToMeshIndices, valueAdderFunc)
     {
         if (isNaN (globalIndex) || globalIndex < 0 || globalIndex >= globalValueArray.length) {
             return null;
@@ -62,9 +69,9 @@ class ObjMeshConverter
             return globalToMeshIndices.get (globalIndex);
         } else {
             let globalValue = globalValueArray[globalIndex];
-            let localIndex = valueAdderFunc (globalValue);
-            globalToMeshIndices.set (globalIndex, localIndex);
-            return localIndex;
+            let meshIndex = valueAdderFunc (globalValue);
+            globalToMeshIndices.set (globalIndex, meshIndex);
+            return meshIndex;
         }
     }
 }
@@ -213,11 +220,16 @@ export class ImporterObj extends ImporterBase
                 parseFloat (parameters[1])
             ));
             return true;
+        } else if (keyword === 'l') {
+            if (parameters.length < 2) {
+                return true;
+            }
+            this.ProcessLineCommand (parameters);
         } else if (keyword === 'f') {
             if (parameters.length < 3) {
                 return true;
             }
-            this.ProcessFace (parameters);
+            this.ProcessFaceCommand (parameters);
             return true;
         }
 
@@ -226,13 +238,53 @@ export class ImporterObj extends ImporterBase
 
     ProcessMaterialParameter (keyword, parameters, line)
     {
-        function CreateTexture (keyword, line, callbacks)
+        function ExtractTextureParameters (parameters)
+        {
+            let textureParameters = new Map ();
+            let lastParameter = null;
+            for (let i = 0; i < parameters.length - 1; i++) {
+                let parameter = parameters[i];
+                if (parameter.startsWith ('-')) {
+                    lastParameter = parameter;
+                    textureParameters.set (lastParameter, []);
+                    continue;
+                }
+                if (lastParameter !== null) {
+                    textureParameters.get (lastParameter).push (parameter);
+                }
+            }
+            return textureParameters;
+        }
+
+        function CreateTexture (parameters, callbacks)
         {
             let texture = new TextureMap ();
-            let textureName = NameFromLine (line, keyword.length, '#');
+            let textureName = parameters[parameters.length - 1];
             let textureBuffer = callbacks.getFileBuffer (textureName);
             texture.name = textureName;
             texture.buffer = textureBuffer;
+
+            let textureParameters = ExtractTextureParameters (parameters);
+            if (textureParameters.has ('-o')) {
+                let offsetParameters = textureParameters.get ('-o');
+                if (offsetParameters.length > 0) {
+                    texture.offset.x = parseFloat (offsetParameters[0]);
+                }
+                if (offsetParameters.length > 1) {
+                    texture.offset.y = parseFloat (offsetParameters[1]);
+                }
+            }
+
+            if (textureParameters.has ('-s')) {
+                let scaleParameters = textureParameters.get ('-s');
+                if (scaleParameters.length > 0) {
+                    texture.scale.x = parseFloat (scaleParameters[0]);
+                }
+                if (scaleParameters.length > 1) {
+                    texture.scale.y = parseFloat (scaleParameters[1]);
+                }
+            }
+
             return texture;
         }
 
@@ -277,20 +329,20 @@ export class ImporterObj extends ImporterBase
             if (this.currentMaterial === null || parameters.length === 0) {
                 return true;
             }
-            this.currentMaterial.diffuseMap = CreateTexture (keyword, line, this.callbacks);
+            this.currentMaterial.diffuseMap = CreateTexture (parameters, this.callbacks);
             UpdateMaterialTransparency (this.currentMaterial);
             return true;
         } else if (keyword === 'map_ks') {
             if (this.currentMaterial === null || parameters.length === 0) {
                 return true;
             }
-            this.currentMaterial.specularMap = CreateTexture (keyword, line, this.callbacks);
+            this.currentMaterial.specularMap = CreateTexture (parameters, this.callbacks);
             return true;
         } else if (keyword === 'map_bump' || keyword === 'bump') {
             if (this.currentMaterial === null || parameters.length === 0) {
                 return true;
             }
-            this.currentMaterial.bumpMap = CreateTexture (keyword, line, this.callbacks);
+            this.currentMaterial.bumpMap = CreateTexture (parameters, this.callbacks);
             return true;
         } else if (keyword === 'ka') {
             if (this.currentMaterial === null || parameters.length < 3) {
@@ -335,38 +387,55 @@ export class ImporterObj extends ImporterBase
         return false;
     }
 
-    ProcessFace (parameters)
+    ProcessLineCommand (parameters)
     {
-        function GetRelativeIndex (index, count)
-        {
-            if (index > 0) {
-                return index - 1;
-            } else {
-                return count + index;
-            }
+        if (this.currentMeshConverter === null) {
+            this.AddNewMesh ('');
         }
 
+        let vertices = [];
+        for (let i = 0; i < parameters.length; i++) {
+            let vertexParams = parameters[i].split ('/');
+            let vertexIndex = this.GetRelativeIndex (parseInt (vertexParams[0], 10), this.globalVertices.length);
+            let meshVertexIndex = this.currentMeshConverter.AddVertex (vertexIndex, this.globalVertices);
+            if (meshVertexIndex === null) {
+                this.SetError (Loc ('Invalid vertex index.'));
+                break;
+            }
+            vertices.push (meshVertexIndex);
+        }
+
+        let line = new Line (vertices);
+        if (this.currentMaterialIndex !== null) {
+            line.mat = this.currentMaterialIndex;
+        }
+
+        this.currentMeshConverter.AddLine (line);
+    }
+
+    ProcessFaceCommand (parameters)
+    {
         let vertices = [];
         let colors = [];
         let normals = [];
         let uvs = [];
 
-        for (let i = 0; i < parameters.length; i++) {
-            let vertexParams = parameters[i].split ('/');
-            vertices.push (GetRelativeIndex (parseInt (vertexParams[0], 10), this.globalVertices.length));
-            if (this.globalVertices.length === this.globalVertexColors.length) {
-                colors.push (GetRelativeIndex (parseInt (vertexParams[0], 10), this.globalVertices.length));
-            }
-            if (vertexParams.length > 1 && vertexParams[1].length > 0) {
-                uvs.push (GetRelativeIndex (parseInt (vertexParams[1], 10), this.globalUvs.length));
-            }
-            if (vertexParams.length > 2 && vertexParams[2].length > 0) {
-                normals.push (GetRelativeIndex (parseInt (vertexParams[2], 10), this.globalNormals.length));
-            }
-        }
-
         if (this.currentMeshConverter === null) {
             this.AddNewMesh ('');
+        }
+
+        for (let i = 0; i < parameters.length; i++) {
+            let vertexParams = parameters[i].split ('/');
+            vertices.push (this.GetRelativeIndex (parseInt (vertexParams[0], 10), this.globalVertices.length));
+            if (this.globalVertices.length === this.globalVertexColors.length) {
+                colors.push (this.GetRelativeIndex (parseInt (vertexParams[0], 10), this.globalVertices.length));
+            }
+            if (vertexParams.length > 1 && vertexParams[1].length > 0) {
+                uvs.push (this.GetRelativeIndex (parseInt (vertexParams[1], 10), this.globalUvs.length));
+            }
+            if (vertexParams.length > 2 && vertexParams[2].length > 0) {
+                normals.push (this.GetRelativeIndex (parseInt (vertexParams[2], 10), this.globalNormals.length));
+            }
         }
 
         for (let i = 0; i < vertices.length - 2; i++) {
@@ -374,7 +443,7 @@ export class ImporterObj extends ImporterBase
             let v1 = this.currentMeshConverter.AddVertex (vertices[i + 1], this.globalVertices);
             let v2 = this.currentMeshConverter.AddVertex (vertices[i + 2], this.globalVertices);
             if (v0 === null || v1 === null || v2 === null) {
-                this.SetError ('Invalid vertex index.');
+                this.SetError (Loc ('Invalid vertex index.'));
                 break;
             }
 
@@ -385,7 +454,7 @@ export class ImporterObj extends ImporterBase
                 let c1 = this.currentMeshConverter.AddVertexColor (colors[i + 1], this.globalVertexColors);
                 let c2 = this.currentMeshConverter.AddVertexColor (colors[i + 2], this.globalVertexColors);
                 if (c0 === null || c1 === null || c2 === null) {
-                    this.SetError ('Invalid vertex color index.');
+                    this.SetError (Loc ('Invalid vertex color index.'));
                     break;
                 }
                 triangle.SetVertexColors (c0, c1, c2);
@@ -396,7 +465,7 @@ export class ImporterObj extends ImporterBase
                 let n1 = this.currentMeshConverter.AddNormal (normals[i + 1], this.globalNormals);
                 let n2 = this.currentMeshConverter.AddNormal (normals[i + 2], this.globalNormals);
                 if (n0 === null || n1 === null || n2 === null) {
-                    this.SetError ('Invalid normal index.');
+                    this.SetError (Loc ('Invalid normal index.'));
                     break;
                 }
                 triangle.SetNormals (n0, n1, n2);
@@ -407,7 +476,7 @@ export class ImporterObj extends ImporterBase
                 let u1 = this.currentMeshConverter.AddUV (uvs[i + 1], this.globalUvs);
                 let u2 = this.currentMeshConverter.AddUV (uvs[i + 2], this.globalUvs);
                 if (u0 === null || u1 === null || u2 === null) {
-                    this.SetError ('Invalid uv index.');
+                    this.SetError (Loc ('Invalid uv index.'));
                     break;
                 }
                 triangle.SetTextureUVs (u0, u1, u2);
@@ -418,6 +487,15 @@ export class ImporterObj extends ImporterBase
             }
 
             this.currentMeshConverter.AddTriangle (triangle);
+        }
+    }
+
+    GetRelativeIndex (index, count)
+    {
+        if (index > 0) {
+            return index - 1;
+        } else {
+            return count + index;
         }
     }
 }

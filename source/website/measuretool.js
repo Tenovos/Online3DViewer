@@ -1,9 +1,11 @@
 import { BigEps, IsEqualEps, RadDeg } from '../engine/geometry/geometry.js';
 import { AddDiv, ClearDomElement } from '../engine/viewer/domutils.js';
 import { AddSvgIconElement, IsDarkTextNeededForColor } from './utils.js';
+import { Loc } from '../engine/core/localization.js';
 
 import * as THREE from 'three';
 import { ColorComponentToFloat, RGBColor } from '../engine/model/color.js';
+import { IntersectionMode } from '../engine/viewer/viewermodel.js';
 
 function GetFaceWorldNormal (intersection)
 {
@@ -135,7 +137,7 @@ export class MeasureTool
 
     Click (mouseCoordinates)
     {
-        let intersection = this.viewer.GetMeshIntersectionUnderMouse (mouseCoordinates);
+        let intersection = this.viewer.GetMeshIntersectionUnderMouse (IntersectionMode.MeshOnly, mouseCoordinates);
         if (intersection === null) {
             this.ClearMarkers ();
             this.UpdatePanel ();
@@ -152,7 +154,7 @@ export class MeasureTool
 
     MouseMove (mouseCoordinates)
     {
-        let intersection = this.viewer.GetMeshIntersectionUnderMouse (mouseCoordinates);
+        let intersection = this.viewer.GetMeshIntersectionUnderMouse (IntersectionMode.MeshOnly, mouseCoordinates);
         if (intersection === null) {
             if (this.tempMarker !== null) {
                 this.tempMarker.Show (false);
@@ -230,9 +232,9 @@ export class MeasureTool
             this.panel.style.backgroundColor = 'transparent';
         }
         if (this.markers.length === 0) {
-            this.panel.innerHTML = 'Select a point.';
+            this.panel.innerHTML = Loc ('Select a point.');
         } else if (this.markers.length === 1) {
-            this.panel.innerHTML = 'Select another point.';
+            this.panel.innerHTML = Loc ('Select another point.');
         } else {
             let calcResult = CalculateMarkerValues (this.markers[0], this.markers[1]);
 

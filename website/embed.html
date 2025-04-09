@@ -12,21 +12,11 @@
 	<!-- meta end -->
 
 	<!-- website start -->
-	<link rel="stylesheet" type="text/css" href="css/icons.css">
-	<link rel="stylesheet" type="text/css" href="css/themes.css">
-	<link rel="stylesheet" type="text/css" href="css/core.css">
-	<link rel="stylesheet" type="text/css" href="css/controls.css">
-	<link rel="stylesheet" type="text/css" href="css/dialogs.css">
-	<link rel="stylesheet" type="text/css" href="css/treeview.css">
-	<link rel="stylesheet" type="text/css" href="css/panelset.css">
-	<link rel="stylesheet" type="text/css" href="css/navigator.css">
-	<link rel="stylesheet" type="text/css" href="css/sidebar.css">
-	<link rel="stylesheet" type="text/css" href="css/website.css">
-	<link rel="stylesheet" type="text/css" href="css/embed.css">
-	<script type="text/javascript" src="../build/o3dv.website.min-dev.js"></script>
+	<link rel="stylesheet" type="text/css" href="../build/o3dv.website.min.css">
+	<script type="text/javascript" src="../build/o3dv.website.min.js"></script>
 	<!-- website end -->
 
-	<!-- analytics start -->
+	<!-- embed analytics start -->
     <script type="text/javascript">
         OV.SetWebsiteEventHandler ((eventName, eventLabel, eventParams) => {
             console.log ({
@@ -36,13 +26,11 @@
             });
         });
     </script>
-	<!-- analytics end -->
+	<!-- embed analytics end -->
 
-    <!-- embed init start -->
     <script type="text/javascript">
-        OV.StartEmbed ('../libs');
+        OV.StartEmbed ();
     </script>
-    <!-- embed init end -->
 
 	<style>
 		html, body
@@ -55,7 +43,7 @@
 <body>
 	<div class="embed_viewer" id="embed_viewer">
 		<a id="website_link" href="https://3dviewer.net" target="_blank" title="Open in 3dviewer.net">
-			<svg class="embed_logo"><use href="assets/images/3dviewer_net_logo.svg#logo"></use></svg>
+			<img class="embed_logo" src="assets/images/3dviewer_net_logo.png"/>
 		</a>
 	</div>
 </body>

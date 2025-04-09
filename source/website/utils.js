@@ -1,6 +1,8 @@
 import { RGBColor, RGBColorToHexString } from '../engine/model/color.js';
 import { CreateObjectUrl } from '../engine/io/bufferutils.js';
 import { AddDiv, CreateDiv, AddDomElement } from '../engine/viewer/domutils.js';
+import { Loc } from '../engine/core/localization.js';
+import { Theme } from './settings.js';
 
 export function GetNameOrDefault(originalName, defaultName) {
   if (originalName.length > 0) {
@@ -10,15 +12,20 @@ export function GetNameOrDefault(originalName, defaultName) {
 }
 
 export function GetNodeName(originalName) {
-  return GetNameOrDefault(originalName, 'No Name');
+  return GetNameOrDefault(originalName, Loc('No Name'));
 }
 
-export function GetMeshName(originalName) {
-  return GetNameOrDefault(originalName, 'No Name');
+export function GetMeshName(originalNodeName, originalMeshName) {
+  let originalName = (originalNodeName.length > 0 ? originalNodeName : originalMeshName);
+  return GetNameOrDefault(originalName, Loc('No Name'));
 }
 
 export function GetMaterialName(originalName) {
-  return GetNameOrDefault(originalName, 'No Name');
+  return GetNameOrDefault(originalName, Loc('No Name'));
+}
+
+export function GetPreferredColorScheme() {
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? Theme.Dark : Theme.Light;
 }
 
 export function IsHoverEnabled() {
@@ -102,15 +109,6 @@ export function DownloadUrlAsFile(url, fileName) {
 export function DownloadArrayBufferAsFile(arrayBuffer, fileName) {
   let url = CreateObjectUrl(arrayBuffer);
   DownloadUrlAsFile(url, fileName);
-}
-
-export function CreateDownloadLink(url, fileName) {
-  let link = document.createElement('a');
-  link.id = 'download_link';
-  link.href = url;
-  link.download = fileName;
-  document.body.appendChild(link);
-  // link.click();
 }
 
 export function CreateSvgIconElement(iconName, className) {
@@ -225,9 +223,8 @@ export function GetFilesFromDataTransfer(dataTransfer, onReady) {
   }
 }
 
-export function AddNumberInput(parentElement, className, onChange, id) {
-  // Include ID Parameter for DOM Element
-  let numberInput = AddDomElement(parentElement, 'input', className, '', id);
+export function AddNumberInput(parentElement, className, onChange) {
+  let numberInput = AddDomElement(parentElement, 'input', className);
   numberInput.setAttribute('type', 'text');
   let onChangeTimeout = null;
   numberInput.addEventListener('input', () => {

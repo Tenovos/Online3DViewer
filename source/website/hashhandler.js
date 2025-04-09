@@ -48,10 +48,10 @@ export class HashHandler
         return parser.GetCamera ();
     }
 
-    GetCameraModeFromHash ()
+    GetProjectionModeFromHash ()
     {
         let parser = CreateUrlParser (this.GetHash ());
-        return parser.GetCameraMode ();
+        return parser.GetProjectionMode ();
     }
 
     GetBackgroundFromHash ()
@@ -70,6 +70,12 @@ export class HashHandler
     {
         let parser = CreateUrlParser (this.GetHash ());
         return parser.GetDefaultColor ();
+    }
+
+    GetDefaultLineColorFromHash ()
+    {
+        let parser = CreateUrlParser (this.GetHash ());
+        return parser.GetDefaultLineColor ();
     }
 
     GetEdgeSettingsFromHash ()

@@ -81,16 +81,7 @@ export function SetGlobals ()
         head : {
             appendChild : function (element) {
                 if (element.type === 'text/javascript') {
-                    if (element.src.indexOf ('draco') !== -1) {
-                        import ('draco3d').then (mod => {
-                            global.DracoDecoderModule = function () {
-                                return mod.createDecoderModule ();
-                            };
-                            element.onload ();
-                        });
-                    } else {
-                        element.onerror ();
-                    }
+                    element.onerror ();
                 }
             }
         },

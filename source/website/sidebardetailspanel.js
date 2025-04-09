@@ -7,8 +7,27 @@ import { AddDiv, AddDomElement, ClearDomElement } from '../engine/viewer/domutil
 import { SidebarPanel } from './sidebarpanel.js';
 import { CreateInlineColorCircle } from './utils.js';
 import { GetFileName, IsUrl } from '../engine/io/fileutils.js';
-import { MaterialType } from '../engine/model/material.js';
+import { MaterialSource, MaterialType } from '../engine/model/material.js';
 import { RGBColorToHexString } from '../engine/model/color.js';
+import { Unit } from '../engine/model/unit.js';
+import { Loc } from '../engine/core/localization.js';
+
+function UnitToString (unit)
+{
+    switch (unit) {
+        case Unit.Millimeter:
+            return Loc ('Millimeter');
+        case Unit.Centimeter:
+            return Loc ('Centimeter');
+        case Unit.Meter:
+            return Loc ('Meter');
+        case Unit.Inch:
+            return Loc ('Inch');
+        case Unit.Foot:
+            return Loc ('Foot');
+    }
+    return Loc ('Unknown');
+}
 
 export class SidebarDetailsPanel extends SidebarPanel
 {
@@ -19,7 +38,7 @@ export class SidebarDetailsPanel extends SidebarPanel
 
     GetName ()
     {
-        return 'Details';
+        return Loc ('Details');
     }
 
     GetIcon ()
@@ -27,25 +46,36 @@ export class SidebarDetailsPanel extends SidebarPanel
         return 'details';
     }
 
-    AddObject3DProperties (object3D)
+    AddObject3DProperties (model, object3D)
     {
         this.Clear ();
         let table = AddDiv (this.contentDiv, 'ov_property_table');
         let boundingBox = GetBoundingBox (object3D);
         let size = SubCoord3D (boundingBox.max, boundingBox.min);
-        this.AddProperty (table, new Property (PropertyType.Integer, 'Vertices', object3D.VertexCount ()));
-        this.AddProperty (table, new Property (PropertyType.Integer, 'Triangles', object3D.TriangleCount ()));
-        this.AddProperty (table, new Property (PropertyType.Number, 'Size X', size.x));
-        this.AddProperty (table, new Property (PropertyType.Number, 'Size Y', size.y));
-        this.AddProperty (table, new Property (PropertyType.Number, 'Size Z', size.z));
-        this.AddCalculatedProperty (table, 'Volume', () => {
+        let unit = model.GetUnit ();
+        this.AddProperty (table, new Property (PropertyType.Integer, Loc ('Vertices'), object3D.VertexCount ()));
+        let lineSegmentCount = object3D.LineSegmentCount ();
+        if (lineSegmentCount > 0) {
+            this.AddProperty (table, new Property (PropertyType.Integer, Loc ('Lines'), lineSegmentCount));
+        }
+        let triangleCount = object3D.TriangleCount ();
+        if (triangleCount > 0) {
+            this.AddProperty (table, new Property (PropertyType.Integer, Loc ('Triangles'), triangleCount));
+        }
+        if (unit !== Unit.Unknown) {
+            this.AddProperty (table, new Property (PropertyType.Text, Loc ('Unit'), UnitToString (unit)));
+        }
+        this.AddProperty (table, new Property (PropertyType.Number, Loc ('Size X'), size.x));
+        this.AddProperty (table, new Property (PropertyType.Number, Loc ('Size Y'), size.y));
+        this.AddProperty (table, new Property (PropertyType.Number, Loc ('Size Z'), size.z));
+        this.AddCalculatedProperty (table, Loc ('Volume'), () => {
             if (!IsTwoManifold (object3D)) {
                 return null;
             }
             const volume = CalculateVolume (object3D);
             return new Property (PropertyType.Number, null, volume);
         });
-        this.AddCalculatedProperty (table, 'Surface', () => {
+        this.AddCalculatedProperty (table, Loc ('Surface'), () => {
             const surfaceArea = CalculateSurfaceArea (object3D);
             return new Property (PropertyType.Number, null, surfaceArea);
         });
@@ -78,34 +108,35 @@ export class SidebarDetailsPanel extends SidebarPanel
         let table = AddDiv (this.contentDiv, 'ov_property_table');
         let typeString = null;
         if (material.type === MaterialType.Phong) {
-            typeString = 'Phong';
+            typeString = Loc ('Phong');
         } else if (material.type === MaterialType.Physical) {
-            typeString = 'Physical';
+            typeString = Loc ('Physical');
         }
-        this.AddProperty (table, new Property (PropertyType.Text, 'Source', material.isDefault ? 'Default' : 'Model'));
-        this.AddProperty (table, new Property (PropertyType.Text, 'Type', typeString));
+        let materialSource = (material.source !== MaterialSource.Model) ? Loc ('Default') : Loc ('Model');
+        this.AddProperty (table, new Property (PropertyType.Text, Loc ('Source'), materialSource));
+        this.AddProperty (table, new Property (PropertyType.Text, Loc ('Type'), typeString));
         if (material.vertexColors) {
-            this.AddProperty (table, new Property (PropertyType.Text, 'Color', 'Vertex colors'));
+            this.AddProperty (table, new Property (PropertyType.Text, Loc ('Color'), Loc ('Vertex colors')));
         } else {
-            this.AddProperty (table, new Property (PropertyType.Color, 'Color', material.color));
+            this.AddProperty (table, new Property (PropertyType.Color, Loc ('Color'), material.color));
             if (material.type === MaterialType.Phong) {
-                this.AddProperty (table, new Property (PropertyType.Color, 'Ambient', material.ambient));
-                this.AddProperty (table, new Property (PropertyType.Color, 'Specular', material.specular));
+                this.AddProperty (table, new Property (PropertyType.Color, Loc ('Ambient'), material.ambient));
+                this.AddProperty (table, new Property (PropertyType.Color, Loc ('Specular'), material.specular));
             }
         }
         if (material.type === MaterialType.Physical) {
-            this.AddProperty (table, new Property (PropertyType.Percent, 'Metalness', material.metalness));
-            this.AddProperty (table, new Property (PropertyType.Percent, 'Roughness', material.roughness));
+            this.AddProperty (table, new Property (PropertyType.Percent, Loc ('Metalness'), material.metalness));
+            this.AddProperty (table, new Property (PropertyType.Percent, Loc ('Roughness'), material.roughness));
         }
-        this.AddProperty (table, new Property (PropertyType.Percent, 'Opacity', material.opacity));
-        AddTextureMap (this, table, 'Diffuse Map', material.diffuseMap);
-        AddTextureMap (this, table, 'Bump Map', material.bumpMap);
-        AddTextureMap (this, table, 'Normal Map', material.normalMap);
-        AddTextureMap (this, table, 'Emissive Map', material.emissiveMap);
+        this.AddProperty (table, new Property (PropertyType.Percent, Loc ('Opacity'), material.opacity));
+        AddTextureMap (this, table, Loc ('Diffuse Map'), material.diffuseMap);
+        AddTextureMap (this, table, Loc ('Bump Map'), material.bumpMap);
+        AddTextureMap (this, table, Loc ('Normal Map'), material.normalMap);
+        AddTextureMap (this, table, Loc ('Emissive Map'), material.emissiveMap);
         if (material.type === MaterialType.Phong) {
-            AddTextureMap (this, table, 'Specular Map', material.specularMap);
+            AddTextureMap (this, table, Loc ('Specular Map'), material.specularMap);
         } else if (material.type === MaterialType.Physical) {
-            AddTextureMap (this, table, 'Metallic Map', material.metalnessMap);
+            AddTextureMap (this, table, Loc ('Metallic Map'), material.metalnessMap);
         }
         this.Resize ();
     }
@@ -139,10 +170,10 @@ export class SidebarDetailsPanel extends SidebarPanel
         let valueColumn = AddDiv (row, 'ov_property_table_cell ov_property_table_value');
         nameColumn.setAttribute ('title', name);
 
-        let calculateButton = AddDiv (valueColumn, 'ov_property_table_button', 'Calculate...');
+        let calculateButton = AddDiv (valueColumn, 'ov_property_table_button', Loc ('Calculate...'));
         calculateButton.addEventListener ('click', () => {
             ClearDomElement (valueColumn);
-            valueColumn.innerHTML = 'Please wait...';
+            valueColumn.innerHTML = Loc ('Please wait...');
             RunTaskAsync (() => {
                 let propertyValue = calculateValue ();
                 if (propertyValue === null) {
