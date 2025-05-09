@@ -49,6 +49,12 @@ export function ShowSnapshotDialog(viewer) {
         AddDiv(line, 'ov_snapshot_dialog_param_name', text, `${id}_text`);
         let numberInput = AddNumberInput(line, 'ov_dialog_text', onChange, `${id}_input`);
         numberInput.classList.add('ov_snapshot_dialog_param_value');
+        if (text.toLowerCase() === 'width') {
+            numberInput.classList.add('ov_snapshot_custom_width_input');
+        }
+        if (text.toLowerCase() === 'height') {
+            numberInput.classList.add('ov_snapshot_custom_height_input');
+        }
         numberInput.addEventListener('focus', () => {
             numberInput.setSelectionRange(0, numberInput.value.length);
         });

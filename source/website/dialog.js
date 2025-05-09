@@ -148,6 +148,9 @@ export class ButtonDialog extends Dialog {
   Init(title, buttons) {
     function AddButton(button, buttonsDiv) {
       let buttonDiv = AddDiv(buttonsDiv, 'ov_button ov_dialog_button', button.name);
+      if (button?.name?.toLowerCase() === 'cancel') {
+        buttonDiv.classList.add('ov_snapshot_dialog_cancel_button');
+      }
       if (button.subClass) {
         buttonDiv.classList.add(button.subClass);
       }
